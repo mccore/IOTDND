@@ -23,7 +23,11 @@ brutespray_output, brutespray_error = brutespray_process.communicate()
 
 hosts = []
 for line in brutespray_output:
-	aHost = Host(line.split()[4], line.split()[2], line.split()[6], line.split()[8])
+	anIP = line.split()[4]
+	aService = line.split()[2]
+	aUser = line.split()[6]
+	aPass = line.split()[8]
+	aHost = Host(anIP, aService, aUser, aPass)
 	hosts.append(aHost)
 
 print hosts
