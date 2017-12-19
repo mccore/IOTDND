@@ -45,14 +45,14 @@ for host in hosts:
 	#However you will need to enter the password for the username. This will probably be done with sshpass: sshpass -p "YOUR_PASSWORD" ssh -o StrictHostKeyChecking=no YOUR_USERNAME@SOME_SITE.COM
 	#Run the honeypot setup script on the remote system. This is also probably where the password should be changed and then updated in the list.
 	#Need to make sure that if a host has the ability to use ssh then it is. Basically, telnet should be a last resort
-	if host.service == "[ssh]" && host.processed == False:
+	if host.service == "[ssh]" and host.processed == False:
 		#I need to create a new password here as well.
 		host.processed = True
 		ssh_transfer_command = "cat honeypot_install.sh | sshpass -o StrictHostKeyChecking=no -p {passwd} ssh {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 		ssh_transfer_process = subprocess.Popen(ssh_transfer_command, stdout=subprocess.PIPE, shell=True)
 		ssh_transfer_output, ssh_transfer_error = ssh_transfer_process.communicate()
 
-	if host.service == "[telnet]" && host.processed == False:
+	if host.service == "[telnet]" and host.processed == False:
 		host.processed = True
 		telnet_transfer_command = ""
 		tn = telnetlib.Telnet(host.IP)
@@ -60,8 +60,8 @@ for host in hosts:
 		tn.read_until("login: ")
 		tn.write(host.user + "\n")
 		if password:
-	    tn.read_until("Password: ")
-	    tn.write(host.passwd + "\n")
+			tn.read_until("Password: ")
+			tn.write(host.passwd + "\n")
 
 		tn.write("ls\n")
 		tn.write("exit\n")
