@@ -55,6 +55,8 @@ for host in hosts:
 		ssh_transfer_process = subprocess.Popen(ssh_transfer_command, stdout=subprocess.PIPE, shell=True)
 		ssh_transfer_output, ssh_transfer_error = ssh_transfer_process.communicate()
 
+		print ssh_transfer_error
+
 	if host.service == "[telnet]" and host.processed == False:
 		host.processed = True
 		telnet_transfer_command = ""
