@@ -48,15 +48,15 @@ for host in hosts:
 	if host.service == "[ssh]" and host.processed == False:
 		#I need to create a new password here as well.
 		host.processed = True
-		with open("honeypot_install.sh", "r") as script:
-			data = script.read()
 		ssh_transfer_command = "cat honeypot_install.sh | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
-		#print "{passwd} {user}@{IP} sending {file}".format(passwd=host.passwd, user=host.user, IP=host.IP, file=data)
-		#ssh_transfer_command = 'sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} "echo {file} > honeypot_install.sh"'.format(passwd=host.passwd, user=host.user, IP=host.IP, file=data)
 		ssh_transfer_process = subprocess.Popen(ssh_transfer_command, stdout=subprocess.PIPE, shell=True)
-		ssh_transfer_process.wait()
+		ssh_transfer_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 		ssh_transfer_output, ssh_transfer_error = ssh_transfer_process.communicate()
 
+		ssh_setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && ./honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		ssh_setup_process = subprocess.Popen(ssh_setup_command, stdout=subprocess.PIPE, shell=True)
+		ssh_setup_process.wait()
+		ssh_setup_output, ssh_setup_error = ssh_setup_process.communicate()
 
 	if host.service == "[telnet]" and host.processed == False:
 		host.processed = True

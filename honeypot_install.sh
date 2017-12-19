@@ -1,2 +1,2 @@
 #!/bin/sh
-#Code goes here
+echo "code"
