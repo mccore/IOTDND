@@ -48,7 +48,9 @@ for host in hosts:
 	if host.service == "[ssh]" and host.processed == False:
 		#I need to create a new password here as well.
 		host.processed = True
-		ssh_transfer_command = "cat honeypot_install.sh | sshpass -o StrictHostKeyChecking=no -p {passwd} ssh {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		script = open("honeypot_install.sh", "r")
+		#ssh_transfer_command = "cat honeypot_install.sh | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		ssh_transfer_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'echo {file} > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP, file=script)
 		ssh_transfer_process = subprocess.Popen(ssh_transfer_command, stdout=subprocess.PIPE, shell=True)
 		ssh_transfer_output, ssh_transfer_error = ssh_transfer_process.communicate()
 
