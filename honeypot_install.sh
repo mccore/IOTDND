@@ -1,2 +1,2 @@
 #!/bin/sh
-echo "code"
+sudo apt-get update
