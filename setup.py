@@ -54,7 +54,7 @@ for host in hosts:
 		ssh_transfer_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 		ssh_transfer_output, ssh_transfer_error = ssh_transfer_process.communicate()
 
-		ssh_setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && ./honeypot_install.sh | sudo bash'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		ssh_setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && sudo ./honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 		ssh_setup_process = subprocess.Popen(ssh_setup_command, stdout=subprocess.PIPE, shell=True)
 		ssh_setup_process.wait()
 		ssh_setup_output, ssh_setup_error = ssh_setup_process.communicate()
