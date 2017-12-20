@@ -46,19 +46,21 @@ for host in hosts:
 	#Run the honeypot setup script on the remote system. This is also probably where the password should be changed and then updated in the list.
 	#Need to make sure that if a host has the ability to use ssh then it is. Basically, telnet should be a last resort
 	if host.service == "[ssh]" and host.processed == False:
-		#I need to create a new password here as well.
+		#I need to create a new user and password here as well. This needs to also be stored.
+		#Basically, I need an ssh admin user/pass combo for actual ssh and then I need to keep the default ssh login for the honeypot
 		host.processed = True
 		ssh_transfer_command = "cat honeypot_install.sh | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 		ssh_transfer_process = subprocess.Popen(ssh_transfer_command, stdout=subprocess.PIPE, shell=True)
 		ssh_transfer_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 		ssh_transfer_output, ssh_transfer_error = ssh_transfer_process.communicate()
 
-		ssh_setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && ./honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		ssh_setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && ./honeypot_install.sh | sudo bash'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 		ssh_setup_process = subprocess.Popen(ssh_setup_command, stdout=subprocess.PIPE, shell=True)
 		ssh_setup_process.wait()
 		ssh_setup_output, ssh_setup_error = ssh_setup_process.communicate()
 
 	if host.service == "[telnet]" and host.processed == False:
+		#The other end is going to need to use netcat which I think is a decent assumption
 		host.processed = True
 		telnet_transfer_command = ""
 		tn = telnetlib.Telnet(host.IP)
