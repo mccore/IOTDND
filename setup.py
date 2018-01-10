@@ -59,7 +59,7 @@ def doSSH(host):
 		ssh_setup_process.wait()
 		ssh_setup_output, ssh_setup_error = ssh_setup_process.communicate()
 
-def doTelnet(host)
+def doTelnet(host):
 		#The other end is going to need to use netcat which I think is a decent assumption
 		#Essentially here I am going to have the device setup ssh and disable telnet for security reasons. TinySSH might be best here.
 		#Once ssh is set up then the ssh configuration should take place
