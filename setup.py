@@ -11,6 +11,7 @@ class Host:
 		self.processed = False
 
 #First I need to nmap to get the hosts.gnmap file.
+print "Nmapping network"
 nmap_command = "nmap -oA hosts 192.168.1.0/24"
 nmap_process = subprocess.Popen(nmap_command, stdout=subprocess.PIPE, shell=True)
 nmap_output, nmap_error = nmap_process.communicate()
@@ -18,6 +19,7 @@ nmap_output, nmap_error = nmap_process.communicate()
 #Now feed the users and passwords to brutespray.
 #Somehow store the service, host, username, and password together.
 #Python can be used in this script because it is on the setup device which should have no trouble with python.
+print "Bruteforcing devices"
 brutespray_command = "brutespray --file hosts.gnmap --service ssh,telnet --threads 3 --hosts 5 -U users.txt -P passwords.txt | grep 'ACCOUNT FOUND'"
 brutespray_process = subprocess.Popen(brutespray_command, stdout=subprocess.PIPE, shell=True)
 brutespray_output, brutespray_error = brutespray_process.communicate()
@@ -39,15 +41,13 @@ for line in real_output:
 		aHost = Host(anIP, aService, aUser, aPass)
 		hosts.append(aHost)
 
-#Now loop through the addresses and their respective protocol (telnet or ssh).
-for host in hosts:
-	#Connect to each host and then transfer the honeypot setup script with ssh: cat logins.txt | ssh root@192.168.1.166 "cat > logins.txt"
-	#However you will need to enter the password for the username. This will probably be done with sshpass: sshpass -p "YOUR_PASSWORD" ssh -o StrictHostKeyChecking=no YOUR_USERNAME@SOME_SITE.COM
-	#Run the honeypot setup script on the remote system. This is also probably where the password should be changed and then updated in the list.
-	#Need to make sure that if a host has the ability to use ssh then it is. Basically, telnet should be a last resort
-	if host.service == "[ssh]" and host.processed == False:
+def doSSH(host):
 		#I need to create a new user and password here as well. This needs to also be stored.
-		#Basically, I need an ssh admin user/pass combo for actual ssh and then I need to keep the default ssh login for the honeypot
+		#The port change for administration is done in the honeypot install
+		#TODO: Create a new root user/pass combo
+		#TODO: Disable the root account and delete it if possible.
+		#TODO: Transfer the report.py file
+
 		host.processed = True
 		ssh_transfer_command = "cat honeypot_install.sh | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 		ssh_transfer_process = subprocess.Popen(ssh_transfer_command, stdout=subprocess.PIPE, shell=True)
@@ -59,8 +59,10 @@ for host in hosts:
 		ssh_setup_process.wait()
 		ssh_setup_output, ssh_setup_error = ssh_setup_process.communicate()
 
-	if host.service == "[telnet]" and host.processed == False:
+def doTelnet(host)
 		#The other end is going to need to use netcat which I think is a decent assumption
+		#Essentially here I am going to have the device setup ssh and disable telnet for security reasons. TinySSH might be best here.
+		#Once ssh is set up then the ssh configuration should take place
 		host.processed = True
 		telnet_transfer_command = ""
 		tn = telnetlib.Telnet(host.IP)
@@ -73,3 +75,15 @@ for host in hosts:
 
 		tn.write("ls\n")
 		tn.write("exit\n")
+
+#Now loop through the addresses and their respective protocol (telnet or ssh).
+print "Looping through hosts"
+for host in hosts:
+	#Run the honeypot setup script on the remote system.
+	#TODO: Need to make sure that if a host has the ability to use ssh then it is. Basically, telnet should be a last resort
+	#TODO: Put each of these if statements into their own function. This will make the telnet setup easier since it can just call the ssh setup after its done.
+	if host.service == "[ssh]" and host.processed == False:
+		doSSH(host)
+
+	if host.service == "[telnet]" and host.processed == False:
+		doTelnet(host)
