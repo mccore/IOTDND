@@ -123,14 +123,14 @@ for host in hosts:
 	#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual input
 	if host.service == "[ssh]" and host.processed == False:
 		#doSSH(host, "test", "test")
-		print "{IP}: Adding new user {anewuser}".format(IP=host.IP, anewuser=newuser)
+		print "{IP}: Adding new user test".format(IP=host.IP)
 		#newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password {anewuser} && echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
 		newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password test'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 		newuser_process = subprocess.Popen(newuser_command, stdout=subprocess.PIPE, shell=True)
 		newuser_process.wait()
 		newuser_output, newuser_error = newuser_process.communicate()
 
-		print "{IP}: Changing new user {anewuser} password".format(IP=host.IP, anewuser=newuser)
+		print "{IP}: Changing new user test password".format(IP=host.IP)
 		#newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
 		newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo chpasswd <<< 'test:test''".format(passwd=host.passwd, user=host.user, IP=host.IP)
 		newpass_process = subprocess.Popen(newpass_command, stdout=subprocess.PIPE, shell=True)
