@@ -31,6 +31,7 @@ for aChar in brutespray_output:
 real_output = ''.join(output_as_list).split('\n')
 
 #Create the host objects for the next for loop
+print "Processing hosts"
 hosts = []
 for line in real_output:
 	if line:
@@ -39,6 +40,7 @@ for line in real_output:
 		aUser = line.split()[6]
 		aPass = line.split()[8]
 		aHost = Host(anIP, aService, aUser, aPass)
+		print "Destination: {IP}, Service: {service}, User: {user}, Password: {password}".format(IP=anIP, service=aService, user=aUser, password=aPass)
 		hosts.append(aHost)
 
 #I should make sure there aren't any duplicates in the hosts list. I should allow multiple of the same IPs but only one of each service.
@@ -47,6 +49,7 @@ def doSSH(host, newuser, newpass):
 	#TODO: Store new user/pass combo
 	#TODO: Error checking
 	#TODO: Print statements to say whats going on
+	#TODO: If Telnet exists then it should be disabled. This should be done with an iptables command to drop all traffic bound for port 23 (done but untested)
 
 	host.processed = True
 	transfer_install_command = "cat honeypot_install.sh | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
@@ -59,7 +62,7 @@ def doSSH(host, newuser, newpass):
 	transfer_report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 	transfer_report_output, transfer_report_error = transfer_report_process.communicate()
 
-	setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && sudo ./honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+	setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && ./honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 	setup_process = subprocess.Popen(setup_command, stdout=subprocess.PIPE, shell=True)
 	setup_process.wait()
 	setup_output, setup_error = setup_process.communicate()
@@ -73,6 +76,11 @@ def doSSH(host, newuser, newpass):
 	#deluser_process = subprocess.Popen(deluser_command, stdout=subprocess.PIPE, shell=True)
 	#deluser_process.wait()
 	#deluser_output, deluser_error = deluser_process.communicate()
+
+	#disable_telnet_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'iptables -A INPUT -p tcp -m tcp --dport 23 -j DROP'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+	#disable_telnet_process = subprocess.Popen(disable_telnet_command, stdout=subprocess.PIPE, shell=True)
+	#disable_telnet_process.wait()
+	#disable_telnet_output, disable_telnet_error = disable_telnet_process.communicate()
 
 def doTelnet(host):
 	#The other end is going to need to use netcat which I think is a decent assumption
@@ -97,9 +105,10 @@ for host in hosts:
 	#Run the honeypot setup script on the remote system.
 	#TODO: Need to make sure that if a host has the ability to use ssh then it is. Basically, telnet should be a last resort
 	#TODO: Make the Telnet if statement call doSSH after doTelnet sets up the ssh client.
-	#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual imput
+	#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual input
 	if host.service == "[ssh]" and host.processed == False:
 		doSSH(host, "test", "test")
 
 	if host.service == "[telnet]" and host.processed == False:
 		doTelnet(host)
+		#doSSH(host, "test", "test")
