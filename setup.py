@@ -67,15 +67,15 @@ def doSSH(host, newuser, newpass):
 	setup_process.wait()
 	setup_output, setup_error = setup_process.communicate()
 
-	newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'sudo adduser {newuser} --gecos "" --disabled-password ; echo '{newuser}:{newuserpassword}' | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, newuser=newuser, newuserpassword=newpass)
+	newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser {newuser} --gecos "" --disabled-password ; echo '{newuser}:{newuserpassword}' | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, newuser=newuser, newuserpassword=newpass)
 	newuser_process = subprocess.Popen(newuser_command, stdout=subprocess.PIPE, shell=True)
 	newuser_process.wait()
 	newuser_output, newuser_error = newuser_process.communicate()
 
-	#deluser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'sudo passwd -l {user}'".format(passwd=host.passwd, user=host.user, IP=host.IP)
-	#deluser_process = subprocess.Popen(deluser_command, stdout=subprocess.PIPE, shell=True)
-	#deluser_process.wait()
-	#deluser_output, deluser_error = deluser_process.communicate()
+	deluser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'sudo passwd -l {user}'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+	deluser_process = subprocess.Popen(deluser_command, stdout=subprocess.PIPE, shell=True)
+	deluser_process.wait()
+	deluser_output, deluser_error = deluser_process.communicate()
 
 	#disable_telnet_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'iptables -A INPUT -p tcp -m tcp --dport 23 -j DROP'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 	#disable_telnet_process = subprocess.Popen(disable_telnet_command, stdout=subprocess.PIPE, shell=True)
