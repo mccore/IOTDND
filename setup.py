@@ -52,31 +52,31 @@ def doSSH(host, newuser, newpass):
 	#TODO: If Telnet exists then it should be disabled. This should be done with an iptables command to drop all traffic bound for port 23 (done but untested)
 
 	host.processed = True
-	print "Transferring install script"
+	print "{IP}: Transferring install script".format(IP=host.IP)
 	transfer_install_command = "cat honeypot_install.sh | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 	transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
 	transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 	transfer_install_output, transfer_install_error = transfer_install_process.communicate()
 
-	print "Transferring report script"
+	print "{IP}: Transferring report script".format(IP=host.IP)
 	transfer_report_command = "cat report.py | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > report.py'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 	transfer_report_process = subprocess.Popen(transfer_report_command, stdout=subprocess.PIPE, shell=True)
 	transfer_report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 	transfer_report_output, transfer_report_error = transfer_report_process.communicate()
 
-	print "Running install script"
+	print "{IP}: Running install script".format(IP=host.IP)
 	setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && ./honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 	setup_process = subprocess.Popen(setup_command, stdout=subprocess.PIPE, shell=True)
 	setup_process.wait()
 	setup_output, setup_error = setup_process.communicate()
 
-	print "Adding new user {anewuser}".format(anewuser=newuser)
-	newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser {anewuser} --gecos "" --disabled-password ; echo '{anewuser}:{anewuserpassword}' | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
+	print "{IP}: Adding new user {anewuser}".format(IP=host.IP, anewuser=newuser)
+	newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password {anewuser} && echo '{anewuser}:{anewuserpassword}' | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
 	newuser_process = subprocess.Popen(newuser_command, stdout=subprocess.PIPE, shell=True)
 	newuser_process.wait()
 	newuser_output, newuser_error = newuser_process.communicate()
 
-	print "Disabling old user"
+	print "{IP}: Disabling old user".format(IP=host.IP)
 	deluser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo passwd -l {user}'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 	deluser_process = subprocess.Popen(deluser_command, stdout=subprocess.PIPE, shell=True)
 	deluser_process.wait()
