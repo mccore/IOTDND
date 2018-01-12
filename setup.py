@@ -78,8 +78,8 @@ def doSSH(host, newuser, newpass):
 	newuser_output, newuser_error = newuser_process.communicate()
 
 	print "{IP}: Changing new user {anewuser} password".format(IP=host.IP, anewuser=newuser)
-	newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'echo {anewuserpassword} | sudo passwd {anewuser} --stdin'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
-	newpass_process = subprocess.Popen(newpass_command, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=False)
+	newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo passwd {anewuser} --stdin < echo {anewuserpassword}'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
+	newpass_process = subprocess.Popen(newpass_command, stdout=subprocess.PIPE, shell=True)
 	newpass_process.wait()
 	newpass_output, newpass_error = newpass_process.communicate()
 
