@@ -81,7 +81,7 @@ def doSSH(host, newuser, newpass):
 
 	print "{IP}: Changing new user {anewuser} password".format(IP=host.IP, anewuser=newuser)
 	#newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
-	newpass_command = "echo {anewuser}:{anewuserpassword} | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'cat - | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
+	newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
 	newpass_process = subprocess.Popen(newpass_command, stdout=subprocess.PIPE, shell=True)
 	newpass_process.wait()
 	newpass_output, newpass_error = newpass_process.communicate()
@@ -122,7 +122,20 @@ for host in hosts:
 	#TODO: Make the Telnet if statement call doSSH after doTelnet sets up the ssh client.
 	#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual input
 	if host.service == "[ssh]" and host.processed == False:
-		doSSH(host, "test", "test")
+		#doSSH(host, "test", "test")
+		print "{IP}: Adding new user {anewuser}".format(IP=host.IP, anewuser=newuser)
+		#newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password {anewuser} && echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
+		newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password test'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		newuser_process = subprocess.Popen(newuser_command, stdout=subprocess.PIPE, shell=True)
+		newuser_process.wait()
+		newuser_output, newuser_error = newuser_process.communicate()
+
+		print "{IP}: Changing new user {anewuser} password".format(IP=host.IP, anewuser=newuser)
+		#newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
+		newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'echo test:test | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		newpass_process = subprocess.Popen(newpass_command, stdout=subprocess.PIPE, shell=True)
+		newpass_process.wait()
+		newpass_output, newpass_error = newpass_process.communicate()
 
 	if host.service == "[telnet]" and host.processed == False:
 		doTelnet(host)
