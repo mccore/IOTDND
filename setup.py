@@ -45,6 +45,8 @@ for line in real_output:
 
 #I should make sure there aren't any duplicates in the hosts list. I should allow multiple of the same IPs but only one of each service.
 
+#TODO: Check to see if I actually need to use shell=True
+#TODO: Check to see if I actually need to use stdout=subprocess.PIPE
 def doSSH(host, newuser, newpass):
 	#TODO: Store new user/pass combo
 	#TODO: Error checking
@@ -78,7 +80,8 @@ def doSSH(host, newuser, newpass):
 	newuser_output, newuser_error = newuser_process.communicate()
 
 	print "{IP}: Changing new user {anewuser} password".format(IP=host.IP, anewuser=newuser)
-	newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo passwd {anewuser} --stdin < echo {anewuserpassword}'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
+	#newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
+	newpass_command = "echo {anewuser}:{anewuserpassword} | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'cat > sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
 	newpass_process = subprocess.Popen(newpass_command, stdout=subprocess.PIPE, shell=True)
 	newpass_process.wait()
 	newpass_output, newpass_error = newpass_process.communicate()
