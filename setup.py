@@ -123,19 +123,33 @@ for host in hosts:
 	#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual input
 	if host.service == "[ssh]" and host.processed == False:
 		#doSSH(host, "test", "test")
-		print "{IP}: Adding new user test".format(IP=host.IP)
-		#newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password {anewuser} && echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
-		newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'sudo adduser --gecos "" --disabled-password test'".format(passwd=host.passwd, user=host.user, IP=host.IP)
-		newuser_process = subprocess.Popen(newuser_command, stdout=subprocess.PIPE, shell=True)
-		newuser_process.wait()
-		newuser_output, newuser_error = newuser_process.communicate()
+		print "{IP}: Creating encrypted password".format(IP=host.IP)
+		pass_command = "echo test | openssl passwd -1 -stdin"
+		pass_process = subprocess.Popen(pass_command)
+		pass_process.wait()
+		pass_output, pass_error = pass_process.communicate()
+		print pass_output
 
-		print "{IP}: Changing new user test password".format(IP=host.IP)
-		#newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
-		newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'echo test:test | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP)
-		newpass_process = subprocess.Popen(newpass_command, stdin=subprocess.PIPE, shell=True)
-		#newpass_process.wait()
-		newpass_output, newpass_error = newpass_process.communicate("test:test")
+		# print "{IP}: Adding new user test".format(IP=host.IP)
+		# #newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password {anewuser} && echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
+		# newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'sudo useradd -m -s /bin/bash -p {encpass} test'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		# newuser_process = subprocess.Popen(newuser_command, stdout=subprocess.PIPE, shell=True)
+		# newuser_process.wait()
+		# newuser_output, newuser_error = newuser_process.communicate()
+
+		# print "{IP}: Adding new user test".format(IP=host.IP)
+		# #newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password {anewuser} && echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
+		# newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'sudo adduser --gecos "" --disabled-password test'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		# newuser_process = subprocess.Popen(newuser_command, stdout=subprocess.PIPE, shell=True)
+		# newuser_process.wait()
+		# newuser_output, newuser_error = newuser_process.communicate()
+
+		# print "{IP}: Changing new user test password".format(IP=host.IP)
+		# #newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
+		# newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'echo test:test | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		# newpass_process = subprocess.Popen(newpass_command, stdin=subprocess.PIPE, shell=True)
+		# #newpass_process.wait()
+		# newpass_output, newpass_error = newpass_process.communicate("test:test")
 
 	if host.service == "[telnet]" and host.processed == False:
 		doTelnet(host)
