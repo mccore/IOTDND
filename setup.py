@@ -16,9 +16,7 @@ nmap_command = "nmap -oA hosts 192.168.1.0/24"
 nmap_process = subprocess.Popen(nmap_command, stdout=subprocess.PIPE, shell=True)
 nmap_output, nmap_error = nmap_process.communicate()
 
-#Now feed the users and passwords to brutespray.
-#Somehow store the service, host, username, and password together.
-#Python can be used in this script because it is on the setup device which should have no trouble with python.
+#Now feed the users and passwords to brutespray. This allows us to have all the information needed for setup
 print "Bruteforcing devices"
 brutespray_command = "brutespray --file hosts.gnmap --service ssh,telnet --threads 3 --hosts 5 -U users.txt -P passwords.txt | grep 'ACCOUNT FOUND'"
 brutespray_process = subprocess.Popen(brutespray_command, stdout=subprocess.PIPE, shell=True)
@@ -30,6 +28,7 @@ for aChar in brutespray_output:
 	output_as_list.append(aChar)
 real_output = ''.join(output_as_list).split('\n')
 
+#I should make sure there aren't any duplicates in the hosts list. I should allow multiple of the same IPs but only one of each service.
 #Create the host objects for the next for loop
 print "Processing hosts"
 hosts = []
@@ -43,15 +42,12 @@ for line in real_output:
 		print "Destination: {IP}, Service: {service}, User: {user}, Password: {password}".format(IP=anIP, service=aService, user=aUser, password=aPass)
 		hosts.append(aHost)
 
-#I should make sure there aren't any duplicates in the hosts list. I should allow multiple of the same IPs but only one of each service.
+file = open('logins.txt', 'w+')
 
-#TODO: Check to see if I actually need to use shell=True
-#TODO: Check to see if I actually need to use stdout=subprocess.PIPE
 def doSSH(host, newuser, newpass):
 	#TODO: Store new user/pass combo
 	#TODO: Error checking
-	#TODO: Print statements to say whats going on
-	#TODO: If Telnet exists then it should be disabled. This should be done with an iptables command to drop all traffic bound for port 23 (done but untested)
+	#TODO: If Telnet exists then it should be disabled. This should be done with an iptables command to drop all traffic bound for port 23 (done but untested). Also I think this should be done in honeypot_install. If ssh is being used then telnet should be disabled.
 
 	host.processed = True
 	print "{IP}: Transferring install script".format(IP=host.IP)
@@ -72,23 +68,23 @@ def doSSH(host, newuser, newpass):
 	setup_process.wait()
 	setup_output, setup_error = setup_process.communicate()
 
-	print "{IP}: Creating encrypted password".format(IP=host.IP)
+	print "{IP}: Creating encrypted password for {newuser}".format(IP=host.IP, newuser=newuser)
 	#pass_command = "openssl passwd -crypt test"
-	pass_command = "mkpasswd -m sha-512 test"
+	pass_command = "mkpasswd -m sha-512 {newpass}".format(newpass=newpass)
 	pass_process = subprocess.Popen(pass_command, stdout=subprocess.PIPE, shell=True)
 	pass_process.wait()
 	pass_output, pass_error = pass_process.communicate()
+	file.write("{IP}={user}:{passhash}").format(IP=host.IP, user=host.user, passhash=pass_output)
 	passhash = re.sub(r"\$", "\\$", pass_output).rstrip()
-	print passhash
 
-	print "{IP}: Adding new user test".format(IP=host.IP)
+	print "{IP}: Adding new user {newuser}".format(IP=host.IP, newuser=newuser)
 	#newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password {anewuser} && echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
-	newuser_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 "sudo useradd -m -s /bin/bash -g sudo -p '{encpass}' test"'''.format(passwd=host.passwd, user=host.user, IP=host.IP, encpass=passhash)
+	newuser_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 "sudo useradd -m -s /bin/bash -g sudo -p '{encpass}' {newuser}"'''.format(passwd=host.passwd, user=host.user, IP=host.IP, encpass=passhash, newuser=newuser)
 	newuser_process = subprocess.Popen(newuser_command, stdout=subprocess.PIPE, shell=True)
 	newuser_process.wait()
 	newuser_output, newuser_error = newuser_process.communicate()
 
-	print "{IP}: Disabling old user".format(IP=host.IP)
+	print "{IP}: Disabling old user {olduser}".format(IP=host.IP, olduser=host.user)
 	deluser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo passwd -l {user}'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 	deluser_process = subprocess.Popen(deluser_command, stdout=subprocess.PIPE, shell=True)
 	deluser_process.wait()
