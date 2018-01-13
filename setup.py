@@ -132,8 +132,8 @@ for host in hosts:
 
 		print "{IP}: Changing new user test password".format(IP=host.IP)
 		#newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
-		newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'echo test | passwd test --stdin'".format(passwd=host.passwd, user=host.user, IP=host.IP)
-		newpass_process = subprocess.Popen(newpass_command)
+		newpass_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'echo test | passwd --stdin test'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		newpass_process = subprocess.Popen(newpass_command, stdout=subprocess.PIPE, shell=True)
 		newpass_process.wait()
 		newpass_output, newpass_error = newpass_process.communicate()
 
