@@ -1,5 +1,5 @@
 #!/usr/bin/env python2.7
-import subprocess, re, telnetlib
+import subprocess, re, telnetlib, datetime
 
 #Create a class to hold host information. I considered using a dictionary but it's easier to edit class variables
 class Host:
@@ -42,7 +42,7 @@ for line in real_output:
 		print "Destination: {IP}, Service: {service}, User: {user}, Password: {password}".format(IP=anIP, service=aService, user=aUser, password=aPass)
 		hosts.append(aHost)
 
-file = open('logins.txt', 'w+')
+file = open('logins_{date}.txt'.format(date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")), 'w')
 
 def doSSH(host, newuser, newpass):
 	#TODO: Store new user/pass combo
