@@ -125,7 +125,7 @@ for host in hosts:
 		#doSSH(host, "test", "test")
 		print "{IP}: Creating encrypted password".format(IP=host.IP)
 		pass_command = "echo test | openssl passwd -1 -stdin"
-		pass_process = subprocess.Popen(pass_command)
+		pass_process = subprocess.Popen(pass_command, stdout=subprocess.PIPE, shell=True)
 		pass_process.wait()
 		pass_output, pass_error = pass_process.communicate()
 		print pass_output
