@@ -124,14 +124,14 @@ for host in hosts:
 	if host.service == "[ssh]" and host.processed == False:
 		#doSSH(host, "test", "test")
 		print "{IP}: Creating encrypted password".format(IP=host.IP)
-		pass_command = "echo test | openssl passwd -1 -stdin"
+		pass_command = "mkpasswd -m sha-512 test"
 		pass_process = subprocess.Popen(pass_command, stdout=subprocess.PIPE, shell=True)
 		pass_process.wait()
 		pass_output, pass_error = pass_process.communicate()
 
 		print "{IP}: Adding new user test".format(IP=host.IP)
 		#newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password {anewuser} && echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
-		newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'sudo useradd -m -s /bin/bash -p {encpass} test'".format(passwd=host.passwd, user=host.user, IP=host.IP, encpass=pass_output)
+		newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'sudo useradd -m -s /bin/bash -g sudo -p {encpass} test'".format(passwd=host.passwd, user=host.user, IP=host.IP, encpass=pass_output)
 		newuser_process = subprocess.Popen(newuser_command, stdout=subprocess.PIPE, shell=True)
 		newuser_process.wait()
 		newuser_output, newuser_error = newuser_process.communicate()
