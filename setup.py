@@ -74,7 +74,7 @@ def doSSH(host, newuser, newpass):
 	pass_process = subprocess.Popen(pass_command, stdout=subprocess.PIPE, shell=True)
 	pass_process.wait()
 	pass_output, pass_error = pass_process.communicate()
-	file.write("{IP}={user}:{passhash}").format(IP=host.IP, user=host.user, passhash=pass_output)
+	file.write("{IP}={user}:{passhash}".format(IP=host.IP, user=host.user, passhash=pass_output))
 	passhash = re.sub(r"\$", "\\$", pass_output).rstrip()
 
 	print "{IP}: Adding new user {newuser}".format(IP=host.IP, newuser=newuser)
