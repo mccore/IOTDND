@@ -45,12 +45,12 @@ for line in real_output:
 file = open('logins_{date}.txt'.format(date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")), 'w')
 
 def doSSH(host, newuser, newpass):
-	#TODO: Store new user/pass combo
 	#TODO: Error checking
 	#TODO: If Telnet exists then it should be disabled. This should be done with an iptables command to drop all traffic bound for port 23 (done but untested). Also I think this should be done in honeypot_install. If ssh is being used then telnet should be disabled.
 
 	host.processed = True
-	print "{IP}: Transferring install script".format(IP=host.IP)
+
+	print "{IP}: Transferring honeypot install script".format(IP=host.IP)
 	transfer_install_command = "cat honeypot_install.sh | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 	transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
 	transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
@@ -74,7 +74,7 @@ def doSSH(host, newuser, newpass):
 	pass_process = subprocess.Popen(pass_command, stdout=subprocess.PIPE, shell=True)
 	pass_process.wait()
 	pass_output, pass_error = pass_process.communicate()
-	file.write("{IP}={user}:{passhash}".format(IP=host.IP, user=host.user, passhash=pass_output))
+	file.write("{IP}={user}:{passhash}".format(IP=host.IP, user=newuser, passhash=pass_output))
 	passhash = re.sub(r"\$", "\\$", pass_output).rstrip()
 
 	print "{IP}: Adding new user {newuser}".format(IP=host.IP, newuser=newuser)
@@ -99,17 +99,25 @@ def doTelnet(host):
 	#The other end is going to need to use netcat which I think is a decent assumption
 	#Essentially here I am going to have the device setup ssh and disable telnet for security reasons. TinySSH might be best here.
 	#Once ssh is set up then the ssh configuration should take place
+	#First thing I'm going to do is transfer an ssh setup file via netcat. Then I'm going to run it via telnet. Only after that will telnet be blocked.
 	host.processed = True
-	telnet_transfer_command = ""
-	tn = telnetlib.Telnet(host.IP)
 
+	print "{IP}: Listening for ssh install script".format(IP=host.IP)
+	tn = telnetlib.Telnet(host.IP)
 	tn.read_until("login: ")
 	tn.write(host.user + "\n")
-	if password:
-		tn.read_until("Password: ")
-		tn.write(host.passwd + "\n")
+	tn.read_until("Password: ")
+	tn.write(host.passwd + "\n")
+	tn.write("nc -l -p 1234 > ssh_install.sh\n")
 
-	tn.write("ls\n")
+	print "{IP}: Transferring ssh install script".format(IP=host.IP)
+	transfer_install_command = "nc -w 3 {IP} 1234 < ssh_install.sh".format(IP=host.IP)
+	transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
+	transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
+	transfer_install_output, transfer_install_error = transfer_install_process.communicate()
+
+	print "{IP}: Running ssh install script".format(IP=host.IP)
+	tn.write("chmod +x ssh_install.sh && ./ssh_install.sh\n")
 	tn.write("exit\n")
 
 #Now loop through the addresses and their respective protocol (telnet or ssh).
