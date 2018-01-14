@@ -108,11 +108,11 @@ def doTelnet(host):
 	print "{IP}: Listening for ssh install script".format(IP=host.IP)
 	tn = telnetlib.Telnet(host.IP)
 	tn.read_until("login: ")
-	tn.write(host.user + "\r")
+	tn.write(host.user + "\r\n")
 	tn.read_until("Password: ")
-	tn.write(host.passwd + "\r")
+	tn.write(host.passwd + "\r\n")
 	#tn.write("nc -l -p 1234 > ssh_install.sh &\n")
-	tn.write("echo poop > poop_install.txt\r")
+	tn.write("echo poop > poop_install.txt\r\n")
 
 	# print "{IP}: Transferring ssh install script".format(IP=host.IP)
 	# transfer_install_command = "nc -w 3 {IP} 1234 < ssh_install.sh &".format(IP=host.IP)
@@ -122,7 +122,7 @@ def doTelnet(host):
 
 	# print "{IP}: Running ssh install script".format(IP=host.IP)
 	# tn.write("chmod +x ssh_install.sh && ./ssh_install.sh\n")
-	tn.write("exit\r")
+	tn.write("exit\r\n")
 
 #Now loop through the addresses and their respective protocol (telnet or ssh).
 print "Looping through hosts"
