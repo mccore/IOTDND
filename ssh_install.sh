@@ -6,7 +6,7 @@ wget https://matt.ucc.asn.au/dropbear/releases/dropbear-2017.75.tar.bz2
 echo "wget done" >> ssh_install.log
 tar xpf dropbear-2017.75.tar.bz2
 echo "tar done" >> ssh_install.log
-cd dropbear-2017.75/
+cd dropbear-*/
 echo "cd done" >> ssh_install.log
 ./configure
 echo "configure done" >> ssh_install.log
