@@ -122,7 +122,9 @@ def doTelnet(host):
 
 	# print "{IP}: Running ssh install script".format(IP=host.IP)
 	# tn.write("chmod +x ssh_install.sh && ./ssh_install.sh\n")
+	tn.write("ls\r\n")
 	tn.write("exit\r\n")
+	print tn.read_all()
 
 #Now loop through the addresses and their respective protocol (telnet or ssh).
 print "Looping through hosts"
