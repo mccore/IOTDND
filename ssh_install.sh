@@ -1,6 +1,6 @@
 #!/bin/sh
 echo "Starting install" >> ssh_install.log
-sudo apt-get install build-essential zlib1g-dev
+sudo apt-get install -y build-essential zlib1g-dev
 echo "apt-get build essential and zlib done" >> ssh_install.log
 wget https://matt.ucc.asn.au/dropbear/releases/dropbear-2017.75.tar.bz2
 echo "wget done" >> ssh_install.log
