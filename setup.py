@@ -111,19 +111,20 @@ def doTelnet(host):
 	tn.write(host.user + "\r\n")
 	tn.read_until("Password: ")
 	tn.write(host.passwd + "\r\n")
-	#tn.write("nc -l -p 1234 > ssh_install.sh &\n")
-	tn.write("echo poop > poop_install.txt\r\n")
-
-	# print "{IP}: Transferring ssh install script".format(IP=host.IP)
-	# transfer_install_command = "nc -w 3 {IP} 1234 < ssh_install.sh &".format(IP=host.IP)
-	# transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
-	# transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
-	# transfer_install_output, transfer_install_error = transfer_install_process.communicate()
-
-	# print "{IP}: Running ssh install script".format(IP=host.IP)
-	# tn.write("chmod +x ssh_install.sh && ./ssh_install.sh\n")
 	tn.write("vt100\r\n")
-	tn.write("ls\r\n")
+	tn.write("nc -l -p 1234 > ssh_install.sh &\r\n")
+	#tn.write("echo poop > poop_install.txt\r\n")
+
+	print "{IP}: Transferring ssh install script".format(IP=host.IP)
+	transfer_install_command = "nc -w 3 {IP} 1234 < ssh_install.sh &".format(IP=host.IP)
+	transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
+	transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
+	transfer_install_output, transfer_install_error = transfer_install_process.communicate()
+
+	print "{IP}: Running ssh install script".format(IP=host.IP)
+	tn.write("chmod +x ssh_install.sh && ./ssh_install.sh\n")
+	#tn.write("vt100\r\n")
+	#tn.write("ls\r\n")
 	tn.write("exit\r\n")
 	print tn.read_all()
 
