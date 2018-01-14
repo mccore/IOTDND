@@ -98,10 +98,8 @@ def doSSH(host, newuser, newpass):
 	#disable_telnet_output, disable_telnet_error = disable_telnet_process.communicate()
 
 def doTelnet(host):
-	#The other end is going to need to use netcat which I think is a decent assumption
-	#Essentially here I am going to have the device setup ssh and disable telnet for security reasons. TinySSH might be best here.
-	#Once ssh is set up then the ssh configuration should take place
 	#First thing I'm going to do is transfer an ssh setup file via netcat. Then I'm going to run it via telnet. Only after that will telnet be blocked.
+	#TODO: Error checking?
 	host.processed = True
 
 	print "{IP}: Listening for ssh install script".format(IP=host.IP)
@@ -122,7 +120,7 @@ def doTelnet(host):
 	tn.write("sleep 10\r\n")
 	tn.write("chmod +x ssh_install.sh && ./ssh_install.sh &\r\n")
 	tn.write("exit\r\n")
-	print tn.read_all()
+	#print tn.read_all() #This prints literally everything that happened on the remote host. I'll leave it disabled because it clutters the terminal
 
 #Now loop through the addresses and their respective protocol (telnet or ssh).
 print "Looping through hosts"
@@ -137,4 +135,4 @@ for host in hosts:
 
 	if host.service == "[telnet]" and host.processed == False:
 		doTelnet(host)
-		#doSSH(host, "test", "test")
+		doSSH(host, "test", "test")
