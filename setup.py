@@ -111,16 +111,17 @@ def doTelnet(host):
 	tn.write(host.user + "\n")
 	tn.read_until("Password: ")
 	tn.write(host.passwd + "\n")
-	tn.write("nc -l -p 1234 > ssh_install.sh &\n")
+	#tn.write("nc -l -p 1234 > ssh_install.sh &\n")
+	tn.write("echo poop > poop_install.txt\n")
 
-	print "{IP}: Transferring ssh install script".format(IP=host.IP)
-	transfer_install_command = "nc -w 3 {IP} 1234 < ssh_install.sh &".format(IP=host.IP)
-	transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
-	transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
-	transfer_install_output, transfer_install_error = transfer_install_process.communicate()
+	# print "{IP}: Transferring ssh install script".format(IP=host.IP)
+	# transfer_install_command = "nc -w 3 {IP} 1234 < ssh_install.sh &".format(IP=host.IP)
+	# transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
+	# transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
+	# transfer_install_output, transfer_install_error = transfer_install_process.communicate()
 
-	print "{IP}: Running ssh install script".format(IP=host.IP)
-	tn.write("chmod +x ssh_install.sh && ./ssh_install.sh\n")
+	# print "{IP}: Running ssh install script".format(IP=host.IP)
+	# tn.write("chmod +x ssh_install.sh && ./ssh_install.sh\n")
 	tn.write("exit\n")
 
 #Now loop through the addresses and their respective protocol (telnet or ssh).
