@@ -42,6 +42,9 @@ for line in real_output:
 		print "Destination: {IP}, Service: {service}, User: {user}, Password: {password}".format(IP=anIP, service=aService, user=aUser, password=aPass)
 		hosts.append(aHost)
 
+# Telnet is extremely and notoriously difficult to bruteforce just because of how it works. For this reason I have added a guarenteed working Telnet example.
+hosts.append(Host("192.168.1.76", "[telnet]", "root", "dietpi"))
+
 file = open('logins_{date}.txt'.format(date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")), 'w')
 
 def doSSH(host, newuser, newpass):
@@ -128,7 +131,7 @@ for host in hosts:
 	#TODO: Make the Telnet if statement call doSSH after doTelnet sets up the ssh client.
 	#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual input
 	if host.service == "[ssh]" and host.processed == False:
-		doSSH(host, "test", "test")
+		#doSSH(host, "test", "test")
 
 	if host.service == "[telnet]" and host.processed == False:
 		doTelnet(host)
