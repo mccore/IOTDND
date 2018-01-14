@@ -122,6 +122,7 @@ def doTelnet(host):
 
 	# print "{IP}: Running ssh install script".format(IP=host.IP)
 	# tn.write("chmod +x ssh_install.sh && ./ssh_install.sh\n")
+	tn.write("vt100\r\n")
 	tn.write("ls\r\n")
 	tn.write("exit\r\n")
 	print tn.read_all()
