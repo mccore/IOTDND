@@ -111,10 +111,10 @@ def doTelnet(host):
 	tn.write(host.user + "\n")
 	tn.read_until("Password: ")
 	tn.write(host.passwd + "\n")
-	tn.write("nc -l -p 1234 > ssh_install.sh\n")
+	tn.write("nc -l -p 1234 > ssh_install.sh &\n")
 
 	print "{IP}: Transferring ssh install script".format(IP=host.IP)
-	transfer_install_command = "nc -w 3 {IP} 1234 < ssh_install.sh".format(IP=host.IP)
+	transfer_install_command = "nc -w 3 {IP} 1234 < ssh_install.sh &".format(IP=host.IP)
 	transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
 	transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 	transfer_install_output, transfer_install_error = transfer_install_process.communicate()
