@@ -6,11 +6,11 @@ wget https://matt.ucc.asn.au/dropbear/releases/dropbear-2017.75.tar.bz2
 echo "wget done" >> ssh_install.log
 tar xpf dropbear-2017.75.tar.bz2
 echo "tar done" >> ssh_install.log
-#cd dropbear-2017.75/
-#echo "cd done" >> ssh_install.log
-~/dropbear-2017.75/configure
+cd dropbear-2017.75/
+echo "cd done" >> ssh_install.log
+./configure
 echo "configure done" >> ssh_install.log
-~/dropbear-2017.75/make install
+make install
 echo "make install done" >> ssh_install.log
 chmod 700 /etc/dropbear
 echo "chmod done" >> ssh_install.log
@@ -24,5 +24,5 @@ sudo /etc/init.d/dropbear start
 echo "dropbear start done" >> ssh_install.log
 (crontab -l ; echo "@reboot sudo /etc/init.d/dropbear start") | crontab -
 echo "cron done and about to exit" >> ssh_install.log
-exit
+#exit
 #The actual server needs to be tested but it should be working
