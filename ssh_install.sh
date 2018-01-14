@@ -12,4 +12,5 @@ dropbearkey -t dss -f $DSS_KEYFILE
 dropbearkey -t rsa -f $RSA_KEYFILE
 sudo /etc/init.d/dropbear start
 (crontab -l ; echo "@reboot sudo /etc/init.d/dropbear start") | crontab -
+exit
 #The actual server needs to be tested but it should be working
