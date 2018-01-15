@@ -2,6 +2,8 @@
 import subprocess, re, telnetlib, datetime
 
 #Create a class to hold host information. I considered using a dictionary but it's easier to edit class variables
+#I'm probably going to have to change it so that each IP can have a list of services. As is there is no way to know which order the services/IPs are in the list.
+#This means that it is possible that if an IP has both Telnet and SSH that Telnet can be found first and SSH will attempt to be installed when none of that should happen. SSH should be used.
 class Host:
 	def __init__(self, IP, service, user, passwd):
 		self.IP = IP
@@ -39,7 +41,7 @@ for line in real_output:
 		anIP = line.split()[4]
 		aService = line.split()[2]
 		aUser = line.split()[6]
-		aPass = line.split()[8]
+		aPass = line.split()[8] #If the pass is (none) then it should be blank
 		aHost = Host(anIP, aService, aUser, aPass)
 		print "Destination: {IP}, Service: {service}, User: {user}, Password: {password}".format(IP=anIP, service=aService, user=aUser, password=aPass)
 		hosts.append(aHost)
