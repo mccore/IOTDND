@@ -24,7 +24,7 @@ def doSSH(host, newuser, newpass):
 	disk_space_process.wait()
 	disk_space_output, disk_space_error = disk_space_process.communicate()
 	disk_space_output = disk_space_output.strip()
-	print "{IP}: Available space = {space}".format(IP=host.IP, space=disk_space_output)
+	#print "{IP}: Available space = {space}".format(IP=host.IP, space=disk_space_output)
 
 	print "{IP}: Creating encrypted password for {newuser}".format(IP=host.IP, newuser=newuser)
 	file = open('logins_{date}.txt'.format(date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")), 'w')
@@ -43,6 +43,12 @@ def doSSH(host, newuser, newpass):
 	newuser_process.wait()
 	newuser_output, newuser_error = newuser_process.communicate()
 
+	print "{IP}: Sudoing new user {newuser}".format(IP=host.IP, newuser=newuser)
+	sudo_user_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'sudo echo "{newuser} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, newuser=newuser)
+	sudo_user_process = subprocess.Popen(sudo_user_command, stdout=subprocess.PIPE, shell=True)
+	sudo_user_process.wait()
+	sudo_user_output, sudo_user_error = sudo_user_process.communicate()
+
 	install_size=235929600
 	if int(disk_space_output) > install_size: #Check to make sure the available diskspace is greater than 225Mb to make sure the full honeypot install will fit.
 		print "{IP}: Transferring honeypot install script".format(IP=host.IP)
@@ -50,12 +56,6 @@ def doSSH(host, newuser, newpass):
 		transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
 		transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 		transfer_install_output, transfer_install_error = transfer_install_process.communicate()
-
-		# print "{IP}: Transferring report script".format(IP=host.IP)
-		# transfer_report_command = "cat report.py | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > report.py'".format(passwd=host.passwd, user=host.user, IP=host.IP)
-		# transfer_report_process = subprocess.Popen(transfer_report_command, stdout=subprocess.PIPE, shell=True)
-		# transfer_report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
-		# transfer_report_output, transfer_report_error = transfer_report_process.communicate()
 
 		print "{IP}: Running install script".format(IP=host.IP)
 		setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && ./honeypot_install.sh {newuser}'".format(passwd=host.passwd, user=host.user, IP=host.IP, newuser=newuser)
@@ -74,6 +74,8 @@ def doSSH(host, newuser, newpass):
 		report_process = subprocess.Popen(report_command, stdout=subprocess.PIPE, shell=True)
 		report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 		report_output, report_error = report_process.communicate()
+	else:
+		print "{IP}: Not enough space to install honeypot".format(IP=host.IP)
 
 	print "{IP}: Disabling old user {olduser}".format(IP=host.IP, olduser=host.user)
 	deluser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo passwd -l {user}'".format(passwd=host.passwd, user=host.user, IP=host.IP)
