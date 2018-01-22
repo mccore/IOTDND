@@ -162,8 +162,8 @@ def main():
 			continue
 
 	print "Creating local cron command and starting server"
-	cron_command = '''(crontab -l ; echo "@reboot ~/IOTDND/report_server.sh {logpath}") | crontab - ; chmod +x ~/IOTDND/report_server.sh && $(~/IOTDND/report_server.sh {logpath} &)'''.format(logpath="~/IOTDND")
-	cron_process = subprocess.Popen(cron_command, stdout=subprocess.PIPE, shell=True)
+	cron_command = '''(crontab -l ; echo "@reboot ~/IOTDND/report_server.sh {logpath}") | crontab - ; chmod +x ~/IOTDND/report_server.sh && ~/IOTDND/report_server.sh {logpath} &'''.format(logpath="~/IOTDND")
+	cron_process = subprocess.Popen(cron_command, shell=True)
 	#cron_process.wait()
 	cron_output, cron_error = cron_process.communicate()
 
