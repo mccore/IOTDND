@@ -139,7 +139,7 @@ def main():
 			aUser = line.split()[6]
 			if aPass == "(none)": #If the pass is (none) then it should be blank
 				aPass = ""
-			else
+			else:
 				aPass = line.split()[8]
 			aHost = Host(anIP, aService, aUser, aPass)
 			print "Destination: {IP}, Service: {service}, User: {user}, Password: {password}".format(IP=anIP, service=aService, user=aUser, password=aPass)
