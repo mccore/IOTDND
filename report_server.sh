@@ -1,10 +1,15 @@
 #!/bin/bash
-nc -lvp 3333 2> status 1> cowrie.json
-ip=$(cat -A status | cut -d'[' -f 3 | cut -d']' -f 1)
-date=$(date '+%Y-%m-%d-%H:%M')
-if [ ! -d ./logs/"$(echo $ip)"_logs/ ]; then
-  mkdir -p ./logs/"$(echo $ip)"_logs/;
-else
-	mv ./cowrie.json ./logs/"$(echo $ip)"_logs/"$(echo $date)"_cowrie.json
+PATH=$1
+if [ ! -d $PATH/logs/ ]; then
+	mkdir -p $PATH/logs/
 fi
-#mv cowrie.json "$(echo $ip)"_"$(echo $date)"_cowrie.json
+
+while true; do
+	nc -lvp 3333 2> $PATH/status 1> $PATH/cowrie.json;
+	ip=$(cat -A status | cut -d'[' -f 3 | cut -d']' -f 1);
+	date=$(date '+%Y-%m-%d-%H:%M');
+	if [ ! -d $PATH/logs/"$(echo $ip)"_logs/ ]; then
+	  mkdir -p $PATH/logs/"$(echo $ip)"_logs/;
+	fi
+	mv $PATH/cowrie.json $PATH/logs/"$(echo $ip)"_logs/"$(echo $date)"_cowrie.json;
+done

@@ -1,58 +1,30 @@
 #!/usr/bin/env python2.7
-import subprocess, re, telnetlib, datetime
+import subprocess, re, telnetlib, datetime, sys
 
 #Create a class to hold host information. I considered using a dictionary but it's easier to edit class variables
 #I'm probably going to have to change it so that each IP can have a list of services. As is there is no way to know which order the services/IPs are in the list.
 #This means that it is possible that if an IP has both Telnet and SSH that Telnet can be found first and SSH will attempt to be installed when none of that should happen. SSH should be used.
+#Also I will probably have to make a Service class so that I can have a list of Services in each Host object since each service has its own user and pass.
 class Host:
 	def __init__(self, IP, service, user, passwd):
+		self.processed = False
 		self.IP = IP
 		self.service = service
 		self.user = user
 		self.passwd = passwd
-		self.processed = False
-
-#First I need to nmap to get the hosts.gnmap file.
-print "Nmapping network"
-nmap_command = "nmap -oA hosts 192.168.1.0/24"
-nmap_process = subprocess.Popen(nmap_command, stdout=subprocess.PIPE, shell=True)
-nmap_output, nmap_error = nmap_process.communicate()
-
-#Now feed the users and passwords to brutespray. This allows us to have all the information needed for setup
-print "Bruteforcing devices"
-brutespray_command = "brutespray --file hosts.gnmap --service ssh,telnet --threads 3 --hosts 5 -U users.txt -P passwords.txt | grep 'ACCOUNT FOUND'"
-brutespray_process = subprocess.Popen(brutespray_command, stdout=subprocess.PIPE, shell=True)
-brutespray_output, brutespray_error = brutespray_process.communicate()
-
-#The way subprocess works means that all of the chars have to be joined together before the output can be split into lines which is what I actually want to process
-output_as_list = []
-for aChar in brutespray_output:
-	output_as_list.append(aChar)
-real_output = ''.join(output_as_list).split('\n')
-
-#I should make sure there aren't any duplicates in the hosts list. I should allow multiple of the same IPs but only one of each service.
-#Create the host objects for the next for loop
-print "Processing hosts"
-hosts = []
-# Telnet is extremely and notoriously difficult to bruteforce just because of how it works. For this reason I have added a guarenteed working Telnet example.
-hosts.append(Host("192.168.1.76", "[telnet]", "root", "dietpi"))
-for line in real_output:
-	if line:
-		anIP = line.split()[4]
-		aService = line.split()[2]
-		aUser = line.split()[6]
-		aPass = line.split()[8] #If the pass is (none) then it should be blank
-		aHost = Host(anIP, aService, aUser, aPass)
-		print "Destination: {IP}, Service: {service}, User: {user}, Password: {password}".format(IP=anIP, service=aService, user=aUser, password=aPass)
-		hosts.append(aHost)
-
-file = open('logins_{date}.txt'.format(date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")), 'w')
 
 def doSSH(host, newuser, newpass):
 	#TODO: Error checking
-	#TODO: If Telnet exists then it should be disabled. This should be done with an iptables command to drop all traffic bound for port 23 (done but untested). Also I think this should be done in honeypot_install. If ssh is being used then telnet should be disabled.
+	#TODO: Test that the reporting cron job is setup properly
 
 	host.processed = True
+
+	print "{IP}: Checking available disk space".format(IP=host.IP) #
+	disk_space_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'df -h --output=avail / | sed '1d''".format(passwd=host.passwd, user=host.user, IP=host.IP)
+	disk_space_process = sub.Popen(disk_space_command, stdout=subprocess.PIPE, shell=True)
+	disk_space_process.wait()
+	disk_space_output, disk_space_error = disk_space_process.communicate()
+	print "{IP}: Available space = {space}".format(IP=host.IP, space=disk_space_output)
 
 	print "{IP}: Transferring honeypot install script".format(IP=host.IP)
 	transfer_install_command = "cat honeypot_install.sh | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
@@ -88,16 +60,23 @@ def doSSH(host, newuser, newpass):
 	newuser_process.wait()
 	newuser_output, newuser_error = newuser_process.communicate()
 
+	get_local_ip_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'" #This is done to get the local IP of the device so that it can be used to send the JSONs too.
+	get_local_ip_process = subprocess.Popen(get_local_ip_command, stdout=subprocess.PIPE, shell=True)
+	get_local_ip_process.wait()
+	get_local_ip_output, get_local_ip_error = get_local_ip_process.communicate()
+	get_local_ip_output = get_local_ip_output.rstrip()
+
+	print "{IP}: Adding cron job to send JSON to report server at {server}".format(IP=host.IP, server=get_local_ip_output)
+	report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 "(crontab -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -"'''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=get_local_ip_output) #List the current cron jobs, create a new one to report the json at 6AM every day, and pipe all that into crontab.
+	report_process = subprocess.Popen(report_command, stdout=subprocess.PIPE, shell=True)
+	report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
+	report_output, report_error = report_process.communicate()
+
 	print "{IP}: Disabling old user {olduser}".format(IP=host.IP, olduser=host.user)
 	deluser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo passwd -l {user}'".format(passwd=host.passwd, user=host.user, IP=host.IP)
 	deluser_process = subprocess.Popen(deluser_command, stdout=subprocess.PIPE, shell=True)
 	deluser_process.wait()
 	deluser_output, deluser_error = deluser_process.communicate()
-
-	#disable_telnet_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'iptables -A INPUT -p tcp -m tcp --dport 23 -j DROP'".format(passwd=host.passwd, user=host.user, IP=host.IP)
-	#disable_telnet_process = subprocess.Popen(disable_telnet_command, stdout=subprocess.PIPE, shell=True)
-	#disable_telnet_process.wait()
-	#disable_telnet_output, disable_telnet_error = disable_telnet_process.communicate()
 
 def doTelnet(host):
 	#First thing I'm going to do is transfer an ssh setup file via netcat. Then I'm going to run it via telnet. Only after that will telnet be blocked.
@@ -124,17 +103,70 @@ def doTelnet(host):
 	tn.write("exit\r\n")
 	#print tn.read_all() #This prints literally everything that happened on the remote host. I'll leave it disabled because it clutters the terminal
 
-#Now loop through the addresses and their respective protocol (telnet or ssh).
-print "Looping through hosts"
-for host in hosts:
-	#Run the honeypot setup script on the remote system.
-	#TODO: Need to make sure that if a host has the ability to use ssh then it is. Basically, telnet should be a last resort
-	#TODO: Make the Telnet if statement call doSSH after doTelnet sets up the ssh client.
-	#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual input
-	if host.service == "[ssh]" and host.processed == False:
-		#doSSH(host, "test", "test")
-		continue
+def main():
+	# print command line arguments
+	for arg in sys.argv[1:]:
+		print arg
 
-	if host.service == "[telnet]" and host.processed == False:
-		doTelnet(host)
-		doSSH(host, "test", "test")
+	#First I need to nmap to get the hosts.gnmap file.
+	print "Nmapping network"
+	nmap_command = "nmap -oA hosts 192.168.1.0/24"
+	nmap_process = subprocess.Popen(nmap_command, stdout=subprocess.PIPE, shell=True)
+	nmap_output, nmap_error = nmap_process.communicate()
+
+	#Now feed the users and passwords to brutespray. This allows us to have all the information needed for setup
+	print "Bruteforcing devices"
+	brutespray_command = "brutespray --file hosts.gnmap --service ssh,telnet --threads 3 --hosts 5 -U users.txt -P passwords.txt | grep 'ACCOUNT FOUND'"
+	brutespray_process = subprocess.Popen(brutespray_command, stdout=subprocess.PIPE, shell=True)
+	brutespray_output, brutespray_error = brutespray_process.communicate()
+
+	#The way subprocess works means that all of the chars have to be joined together before the output can be split into lines which is what I actually want to process
+	output_as_list = []
+	for aChar in brutespray_output:
+		output_as_list.append(aChar)
+	real_output = ''.join(output_as_list).split('\n')
+
+	#I should make sure there aren't any duplicates in the hosts list. I should allow multiple of the same IPs but only one of each service.
+	#Create the host objects for the next for loop
+	print "Processing hosts"
+	hosts = []
+	# Telnet is extremely and notoriously difficult to bruteforce just because of how it works. For this reason I have added a guarenteed working Telnet example.
+	hosts.append(Host("192.168.1.76", "[telnet]", "root", "dietpi"))
+	for line in real_output:
+		if line:
+			anIP = line.split()[4]
+			aService = line.split()[2]
+			aUser = line.split()[6]
+			if aPass == "(none)": #If the pass is (none) then it should be blank
+				aPass = ""
+			else
+				aPass = line.split()[8]
+			aHost = Host(anIP, aService, aUser, aPass)
+			print "Destination: {IP}, Service: {service}, User: {user}, Password: {password}".format(IP=anIP, service=aService, user=aUser, password=aPass)
+			hosts.append(aHost)
+
+	file = open('logins_{date}.txt'.format(date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")), 'w')
+
+	#Now loop through the addresses and their respective protocol (telnet or ssh).
+	print "Looping through hosts"
+	for host in hosts:
+		#Run the honeypot setup script on the remote system.
+		#TODO: Need to make sure that if a host has the ability to use ssh then it is. Basically, telnet should be a last resort. A way to achieve this might be to sort the hosts list by service so that ssh is on top.
+		#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual input
+		if host.service == "[ssh]" and host.processed == False:
+			doSSH(host, "test", "test")
+			#continue
+
+		if host.service == "[telnet]" and host.processed == False:
+			#doTelnet(host)
+			#doSSH(host, "test", "test")
+			continue
+
+	print "Creating local cron command and starting server"
+	cron_command = '''chmod +x ~/IOTDND/report_server.sh && ~/IOTDND/report_server.sh ; (crontab -l ; echo "@reboot ~/IOTDND/report_server.sh {logpath}") | crontab -'''.format(logpath="~/IOTDND")
+	cron_process = subprocess.Popen(cron_command, stdout=subprocess.PIPE, shell=True)
+	cron_process.wait()
+	cron_output, cron_error = cron_process.communicate()
+
+if __name__ == "__main__":
+    main()
