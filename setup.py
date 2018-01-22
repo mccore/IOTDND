@@ -24,6 +24,7 @@ def doSSH(host, newuser, newpass):
 	disk_space_process = subprocess.Popen(disk_space_command, stdout=subprocess.PIPE, shell=True)
 	disk_space_process.wait()
 	disk_space_output, disk_space_error = disk_space_process.communicate()
+	disk_space_output = disk_space_output.strip()
 	print "{IP}: Available space = {space}".format(IP=host.IP, space=disk_space_output)
 
 	print "{IP}: Transferring honeypot install script".format(IP=host.IP)
@@ -45,6 +46,7 @@ def doSSH(host, newuser, newpass):
 	setup_output, setup_error = setup_process.communicate()
 
 	print "{IP}: Creating encrypted password for {newuser}".format(IP=host.IP, newuser=newuser)
+	file = open('logins_{date}.txt'.format(date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")), 'w')
 	#pass_command = "openssl passwd -crypt test"
 	pass_command = "mkpasswd -m sha-512 {newpass}".format(newpass=newpass)
 	pass_process = subprocess.Popen(pass_command, stdout=subprocess.PIPE, shell=True)
@@ -143,8 +145,6 @@ def main():
 			aHost = Host(anIP, aService, aUser, aPass)
 			print "Destination: {IP}, Service: {service}, User: {user}, Password: {password}".format(IP=anIP, service=aService, user=aUser, password=aPass)
 			hosts.append(aHost)
-
-	file = open('logins_{date}.txt'.format(date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")), 'w')
 
 	#Now loop through the addresses and their respective protocol (telnet or ssh).
 	print "Looping through hosts"
