@@ -32,11 +32,11 @@ def doSSH(host, newuser, newpass):
 	transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 	transfer_install_output, transfer_install_error = transfer_install_process.communicate()
 
-	print "{IP}: Transferring report script".format(IP=host.IP)
-	transfer_report_command = "cat report.py | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > report.py'".format(passwd=host.passwd, user=host.user, IP=host.IP)
-	transfer_report_process = subprocess.Popen(transfer_report_command, stdout=subprocess.PIPE, shell=True)
-	transfer_report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
-	transfer_report_output, transfer_report_error = transfer_report_process.communicate()
+	# print "{IP}: Transferring report script".format(IP=host.IP)
+	# transfer_report_command = "cat report.py | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > report.py'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+	# transfer_report_process = subprocess.Popen(transfer_report_command, stdout=subprocess.PIPE, shell=True)
+	# transfer_report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
+	# transfer_report_output, transfer_report_error = transfer_report_process.communicate()
 
 	print "{IP}: Running install script".format(IP=host.IP)
 	setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && ./honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
