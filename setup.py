@@ -21,7 +21,7 @@ def doSSH(host, newuser, newpass):
 
 	print "{IP}: Checking available disk space".format(IP=host.IP) #
 	disk_space_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'df -h --output=avail / | sed '1d''".format(passwd=host.passwd, user=host.user, IP=host.IP)
-	disk_space_process = sub.Popen(disk_space_command, stdout=subprocess.PIPE, shell=True)
+	disk_space_process = subprocess.Popen(disk_space_command, stdout=subprocess.PIPE, shell=True)
 	disk_space_process.wait()
 	disk_space_output, disk_space_error = disk_space_process.communicate()
 	print "{IP}: Available space = {space}".format(IP=host.IP, space=disk_space_output)
