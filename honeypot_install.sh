@@ -16,7 +16,7 @@ pip install --upgrade -r requirements.txt
 EOF
 sudo iptables -t nat -A PREROUTING -p tcp --dport 1022 -j REDIRECT --to-port 22
 sudo iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-port 2222
-(crontab -l ; echo "@reboot sudo iptables -t nat -A PREROUTING -p tcp --dport 1022 -j REDIRECT --to-port 22 ; sudo iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-port 2222 ; iptables -A INPUT -p tcp -m tcp --dport 23 -j DROP") | crontab -
+(crontab -l ; echo "@reboot sudo iptables -t nat -A PREROUTING -p tcp --dport 1022 -j REDIRECT --to-port 22 ; sudo iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-port 2222 ; sudo iptables -A INPUT -p tcp -m tcp --dport 23 -j DROP") | crontab -
 (crontab -l ; echo "@reboot su - cowrie -c '~/cowrie/bin/cowrie start'") | crontab -
 
 #Need to change the honeypot config to allow the root login in the data/userdb.txt file (This will be solved by using fork of honeypot with my modifications)

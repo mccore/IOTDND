@@ -69,7 +69,7 @@ def doSSH(host, newuser, newpass):
 	get_local_ip_output = get_local_ip_output.rstrip()
 
 	print "{IP}: Adding cron job to send JSON to report server at {server}".format(IP=host.IP, server=get_local_ip_output)
-	report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 "(crontab -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -"'''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=get_local_ip_output) #List the current cron jobs, create a new one to report the json at 6AM every day, and pipe all that into crontab.
+	report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=get_local_ip_output) #List the current cron jobs, create a new one to report the json at 6AM every day, and pipe all that into crontab.
 	report_process = subprocess.Popen(report_command, stdout=subprocess.PIPE, shell=True)
 	report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 	report_output, report_error = report_process.communicate()
@@ -162,7 +162,7 @@ def main():
 			continue
 
 	print "Creating local cron command and starting server"
-	cron_command = '''chmod +x ~/IOTDND/report_server.sh && ~/IOTDND/report_server.sh ; (crontab -l ; echo "@reboot ~/IOTDND/report_server.sh {logpath}") | crontab -'''.format(logpath="~/IOTDND")
+	cron_command = '''chmod +x ~/IOTDND/report_server.sh && ~/IOTDND/report_server.sh {logpath} & ; (crontab -l ; echo "@reboot ~/IOTDND/report_server.sh {logpath}") | crontab -'''.format(logpath="~/IOTDND")
 	cron_process = subprocess.Popen(cron_command, stdout=subprocess.PIPE, shell=True)
 	cron_process.wait()
 	cron_output, cron_error = cron_process.communicate()
