@@ -1,10 +1,11 @@
 #!/bin/sh
-sudo apt-get -y update
+newuser=$1
+#sudo apt-get -y update
 #sudo apt-get -y install virtualenv libmpfr-dev libssl-dev libmpc-dev libffi-dev build-essential libpython-dev
 sudo apt-get -y install python-virtualenv libssl-dev libffi-dev build-essential libpython-dev python2.7-minimal
 #sudo apt-get -y install python-virtualenv libmpfr-dev libmpc-dev libssl-dev libffi-dev build-essential libpython-dev python2.7-minimal
 sudo adduser --gecos "" --disabled-password cowrie && sudo su - cowrie << EOF
-wget --no-check-certificate --content-disposition http://github.com/micheloosterhof/cowrie/archive/master.zip
+wget --no-check-certificate --content-disposition http://github.com/mccore/cowrie/archive/master.zip
 unzip cowrie-master.zip && rm cowrie-master.zip && mv cowrie-master/ cowrie/
 cd cowrie && cp cowrie.cfg.dist cowrie.cfg
 virtualenv --python=python2.7 cowrie-env
@@ -17,8 +18,8 @@ EOF
 sudo iptables -t nat -A PREROUTING -p tcp --dport 1022 -j REDIRECT --to-port 22
 sudo iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-port 2222
 sudo iptables -A INPUT -p tcp -m tcp --dport 23 -j DROP
-(crontab -l ; echo "@reboot sudo iptables -t nat -A PREROUTING -p tcp --dport 1022 -j REDIRECT --to-port 22 ; sudo iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-port 2222 ; sudo iptables -A INPUT -p tcp -m tcp --dport 23 -j DROP") | crontab -
-(crontab -l ; echo "@reboot su - cowrie -c '~/cowrie/bin/cowrie start'") | crontab -
+(crontab -u $newuser -l ; echo "@reboot sudo iptables -t nat -A PREROUTING -p tcp --dport 1022 -j REDIRECT --to-port 22 ; sudo iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-port 2222 ; sudo iptables -A INPUT -p tcp -m tcp --dport 23 -j DROP") | crontab -u $newuser -
+(crontab -u $newuser -l ; echo "@reboot su - cowrie -c '~/cowrie/bin/cowrie start'") | crontab -u $newuser -
 
 #Need to change the honeypot config to allow the root login in the data/userdb.txt file (This will be solved by using fork of honeypot with my modifications)
 #Need to change the honeypot config to allow ssh_exec. This also needs testing as I need to limit the exec to honeypots only. Also, can the honeypots use ssh at all?

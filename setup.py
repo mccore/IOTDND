@@ -15,35 +15,16 @@ class Host:
 
 def doSSH(host, newuser, newpass):
 	#TODO: Error checking
-	#TODO: Test that the reporting cron job is setup properly
 
 	host.processed = True
 
 	print "{IP}: Checking available disk space".format(IP=host.IP) #
-	disk_space_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'df -h --output=avail / | sed '1d''".format(passwd=host.passwd, user=host.user, IP=host.IP)
+	disk_space_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'df -B1 --output=avail / | sed '1d''".format(passwd=host.passwd, user=host.user, IP=host.IP)
 	disk_space_process = subprocess.Popen(disk_space_command, stdout=subprocess.PIPE, shell=True)
 	disk_space_process.wait()
 	disk_space_output, disk_space_error = disk_space_process.communicate()
 	disk_space_output = disk_space_output.strip()
 	print "{IP}: Available space = {space}".format(IP=host.IP, space=disk_space_output)
-
-	print "{IP}: Transferring honeypot install script".format(IP=host.IP)
-	transfer_install_command = "cat honeypot_install.sh | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
-	transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
-	transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
-	transfer_install_output, transfer_install_error = transfer_install_process.communicate()
-
-	# print "{IP}: Transferring report script".format(IP=host.IP)
-	# transfer_report_command = "cat report.py | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > report.py'".format(passwd=host.passwd, user=host.user, IP=host.IP)
-	# transfer_report_process = subprocess.Popen(transfer_report_command, stdout=subprocess.PIPE, shell=True)
-	# transfer_report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
-	# transfer_report_output, transfer_report_error = transfer_report_process.communicate()
-
-	print "{IP}: Running install script".format(IP=host.IP)
-	setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && ./honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
-	setup_process = subprocess.Popen(setup_command, stdout=subprocess.PIPE, shell=True)
-	setup_process.wait()
-	setup_output, setup_error = setup_process.communicate()
 
 	print "{IP}: Creating encrypted password for {newuser}".format(IP=host.IP, newuser=newuser)
 	file = open('logins_{date}.txt'.format(date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")), 'w')
@@ -57,22 +38,42 @@ def doSSH(host, newuser, newpass):
 
 	print "{IP}: Adding new user {newuser}".format(IP=host.IP, newuser=newuser)
 	#newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password {anewuser} && echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
-	newuser_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 "sudo useradd -m -s /bin/bash -g sudo -p '{encpass}' {newuser}"'''.format(passwd=host.passwd, user=host.user, IP=host.IP, encpass=passhash, newuser=newuser)
+	newuser_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} "sudo useradd -m -s /bin/bash -g sudo -p '{encpass}' {newuser}"'''.format(passwd=host.passwd, user=host.user, IP=host.IP, encpass=passhash, newuser=newuser)
 	newuser_process = subprocess.Popen(newuser_command, stdout=subprocess.PIPE, shell=True)
 	newuser_process.wait()
 	newuser_output, newuser_error = newuser_process.communicate()
 
-	get_local_ip_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'" #This is done to get the local IP of the device so that it can be used to send the JSONs too.
-	get_local_ip_process = subprocess.Popen(get_local_ip_command, stdout=subprocess.PIPE, shell=True)
-	get_local_ip_process.wait()
-	get_local_ip_output, get_local_ip_error = get_local_ip_process.communicate()
-	get_local_ip_output = get_local_ip_output.rstrip()
+	install_size=235929600
+	if int(disk_space_output) > install_size: #Check to make sure the available diskspace is greater than 225Mb to make sure the full honeypot install will fit.
+		print "{IP}: Transferring honeypot install script".format(IP=host.IP)
+		transfer_install_command = "cat honeypot_install.sh | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
+		transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
+		transfer_install_output, transfer_install_error = transfer_install_process.communicate()
 
-	print "{IP}: Adding cron job to send JSON to report server at {server}".format(IP=host.IP, server=get_local_ip_output)
-	report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=get_local_ip_output) #List the current cron jobs, create a new one to report the json at 6AM every day, and pipe all that into crontab.
-	report_process = subprocess.Popen(report_command, stdout=subprocess.PIPE, shell=True)
-	report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
-	report_output, report_error = report_process.communicate()
+		# print "{IP}: Transferring report script".format(IP=host.IP)
+		# transfer_report_command = "cat report.py | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > report.py'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		# transfer_report_process = subprocess.Popen(transfer_report_command, stdout=subprocess.PIPE, shell=True)
+		# transfer_report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
+		# transfer_report_output, transfer_report_error = transfer_report_process.communicate()
+
+		print "{IP}: Running install script".format(IP=host.IP)
+		setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && ./honeypot_install.sh {newuser}'".format(passwd=host.passwd, user=host.user, IP=host.IP, newuser=newuser)
+		setup_process = subprocess.Popen(setup_command, stdout=subprocess.PIPE, shell=True)
+		setup_process.wait()
+		setup_output, setup_error = setup_process.communicate()
+
+		get_local_ip_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'" #This is done to get the local IP of the device so that it can be used to send the JSONs too.
+		get_local_ip_process = subprocess.Popen(get_local_ip_command, stdout=subprocess.PIPE, shell=True)
+		get_local_ip_process.wait()
+		get_local_ip_output, get_local_ip_error = get_local_ip_process.communicate()
+		get_local_ip_output = get_local_ip_output.rstrip()
+
+		print "{IP}: Adding cron job to send JSON to report server at {server}".format(IP=host.IP, server=get_local_ip_output)
+		report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -u {newuser} -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -u {newuser} -' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=get_local_ip_output, newuser=newuser) #List the current cron jobs, create a new one to report the json at 6AM every day, and pipe all that into crontab.
+		report_process = subprocess.Popen(report_command, stdout=subprocess.PIPE, shell=True)
+		report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
+		report_output, report_error = report_process.communicate()
 
 	print "{IP}: Disabling old user {olduser}".format(IP=host.IP, olduser=host.user)
 	deluser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo passwd -l {user}'".format(passwd=host.passwd, user=host.user, IP=host.IP)
