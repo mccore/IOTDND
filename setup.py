@@ -1,8 +1,8 @@
 #!/usr/bin/env python2.7
-import subprocess, re, telnetlib, datetime, sys
+import subprocess, re, telnetlib, datetime, sys, os.path
 
 #Create a class to hold host information. I considered using a dictionary but it's easier to edit class variables
-#I'm probably going to have to change it so that each IP can have a list of services. As is there is no way to know which order the services/IPs are in the list.
+#I'm probably going to have to change it so that each IP can have a list of services. As there is no way to know which order the services/IPs are in the list.
 #This means that it is possible that if an IP has both Telnet and SSH that Telnet can be found first and SSH will attempt to be installed when none of that should happen. SSH should be used.
 #Also I will probably have to make a Service class so that I can have a list of Services in each Host object since each service has its own user and pass.
 class Host:
@@ -26,14 +26,28 @@ def doSSH(host, newuser, newpass):
 	disk_space_output = disk_space_output.strip()
 	#print "{IP}: Available space = {space}".format(IP=host.IP, space=disk_space_output)
 
+	date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
+	if os.path.isfile("./logins_{date}.txt.enc".format(date=date)):
+		dec_file_command = "openssl aes-256-cbc -d -a -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=newpass)
+		dec_file_process = subprocess.Popen(dec_file_command, stdout=subprocess.PIPE, shell=True)
+		dec_file_process.wait()
+		dec_file_output, dec_file_error = dec_file_process.communicate()
+
+	file = open('./logins_{date}.txt'.format(date=date), 'w')
+	file.write("{IP}={user}:{passwd}".format(IP=host.IP, user=newuser, passwd=newpass))
+
+	enc_file_command = "openssl aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:{newpass} && rm ./logins_{date}.txt".format(date=date, newpass=newpass)
+	enc_file_process = subprocess.Popen(enc_file_command, stdout=subprocess.PIPE, shell=True)
+	enc_file_process.wait()
+	enc_file_output, enc_file_error = enc_file_process.communicate()
+
+
 	print "{IP}: Creating encrypted password for {newuser}".format(IP=host.IP, newuser=newuser)
-	file = open('logins_{date}.txt'.format(date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")), 'w')
 	#pass_command = "openssl passwd -crypt test"
 	pass_command = "mkpasswd -m sha-512 {newpass}".format(newpass=newpass)
 	pass_process = subprocess.Popen(pass_command, stdout=subprocess.PIPE, shell=True)
 	pass_process.wait()
 	pass_output, pass_error = pass_process.communicate()
-	file.write("{IP}={user}:{passhash}".format(IP=host.IP, user=newuser, passhash=pass_output))
 	passhash = re.sub(r"\$", "\\$", pass_output).rstrip()
 
 	print "{IP}: Adding new user {newuser}".format(IP=host.IP, newuser=newuser)
@@ -86,27 +100,42 @@ def doSSH(host, newuser, newpass):
 def doTelnet(host):
 	#First thing I'm going to do is transfer an ssh setup file via netcat. Then I'm going to run it via telnet. Only after that will telnet be blocked.
 	#TODO: Error checking?
-	host.processed = True
+	#TODO: Space checking for ssh install
+	#TODO: If there is not enough space to install SSH, it should create a new user and lock the old one like doSSH does.
+	#TODO: A possible solution to having to rewrire the whole Host class is to simply check here if port 22 is open.
 
-	print "{IP}: Listening for ssh install script".format(IP=host.IP)
+	host.processed = True
 	tn = telnetlib.Telnet(host.IP)
+
+	print "{IP}: Logging in".format(IP=host.IP)
 	tn.read_until("login: ")
 	tn.write(host.user + "\r\n")
 	tn.read_until("Password: ")
 	tn.write(host.passwd + "\r\n")
-	tn.write("nc -l -p 1234 > ssh_install.sh &\r\n")
 
-	print "{IP}: Transferring ssh install script".format(IP=host.IP)
-	transfer_install_command = "sleep 5 && nc -w 10 {IP} 1234 < ssh_install.sh".format(IP=host.IP)
-	transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
-	#transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
-	transfer_install_output, transfer_install_error = transfer_install_process.communicate()
+	print "{IP}: Checking available disk space".format(IP=host.IP)
+	tn.write("df -B1 --output=avail / | sed '1d'")
+	disk_space_output = tn.read_eager() #Need to play with the eager part.
+	disk_space_output = disk_space_output.strip()
 
-	print "{IP}: Running ssh install script".format(IP=host.IP)
-	tn.write("sleep 10\r\n")
-	tn.write("chmod +x ssh_install.sh && ./ssh_install.sh &\r\n")
-	tn.write("exit\r\n")
-	#print tn.read_all() #This prints literally everything that happened on the remote host. I'll leave it disabled because it clutters the terminal
+	install_size=235929600 #This needs to be changed. I'll have to transfer the ssh_install and watch the install size
+	if int(disk_space_output) > install_size:
+		print "{IP}: Listening for ssh install script".format(IP=host.IP)
+		tn.write("nc -l -p 1234 > ssh_install.sh &\r\n")
+
+		print "{IP}: Transferring ssh install script".format(IP=host.IP)
+		transfer_install_command = "sleep 5 && nc -w 10 {IP} 1234 < ssh_install.sh".format(IP=host.IP)
+		transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
+		#transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
+		transfer_install_output, transfer_install_error = transfer_install_process.communicate()
+
+		print "{IP}: Running ssh install script".format(IP=host.IP)
+		tn.write("sleep 10\r\n")
+		tn.write("chmod +x ssh_install.sh && ./ssh_install.sh &\r\n")
+		tn.write("exit\r\n")
+		#print tn.read_all() #This prints literally everything that happened on the remote host. I'll leave it disabled because it clutters the terminal
+	else:
+		print "{IP}: Not enough space to install SSH".format(IP=host.IP)
 
 def main():
 	# print command line arguments
@@ -114,6 +143,7 @@ def main():
 		print arg
 
 	#First I need to nmap to get the hosts.gnmap file.
+	#TODO: The IP address range should be an argument. Default behavior should be to use the range of the default gateway
 	print "Nmapping network"
 	nmap_command = "nmap -oA hosts 192.168.1.0/24"
 	nmap_process = subprocess.Popen(nmap_command, stdout=subprocess.PIPE, shell=True)
