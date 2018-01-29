@@ -36,7 +36,7 @@ def doSSH(host, newuser, newpass):
 	file = open('./logins_{date}.txt'.format(date=date), 'a+')
 	file.write("{IP}={user}:{passwd}".format(IP=host.IP, user=newuser, passwd=newpass))
 
-	enc_file_command = "openssl aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:{newpass} && rm ./logins_{date}.txt".format(date=date, newpass=newpass)
+	enc_file_command = "openssl aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:test && rm ./logins_{date}.txt".format(date=date)
 	enc_file_process = subprocess.Popen(enc_file_command, stdout=subprocess.PIPE, shell=True)
 	enc_file_process.wait()
 	enc_file_output, enc_file_error = enc_file_process.communicate()
