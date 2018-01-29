@@ -23,7 +23,6 @@ sudo iptables -A INPUT -p tcp -m tcp --dport 23 -j DROP
 
 #Need to change the honeypot config to allow the root login in the data/userdb.txt file (This will be solved by using fork of honeypot with my modifications)
 #Need to change the honeypot config to allow ssh_exec. This also needs testing as I need to limit the exec to honeypots only. Also, can the honeypots use ssh at all?
-#I am going to need to also block telnet which should be added to the iptables crontab line
 #This whole thing needs to be tested. It also assumes that apt-get can be used which is debian based. Also it assumes that wget is installed. If it isn't I will need to use busybox I think. Testing on dietpi successful
 #I need to add if statements to check for the commands that I use. If it doesn't have them then I install busybox.
 #I need to check the package manager and use yum if its redhat. That also means this needs to be tested on redhat

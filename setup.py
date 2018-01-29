@@ -26,14 +26,14 @@ def doSSH(host, newuser, newpass):
 	disk_space_output = disk_space_output.strip()
 	#print "{IP}: Available space = {space}".format(IP=host.IP, space=disk_space_output)
 
-	date=datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
+	date=datetime.datetime.now().strftime("%Y-%m-%d")
 	if os.path.isfile("./logins_{date}.txt.enc".format(date=date)):
 		dec_file_command = "openssl aes-256-cbc -d -a -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=newpass)
-		dec_file_process = subprocess.Popen(dec_file_command, stdout=subprocess.PIPE, shell=True)
-		dec_file_process.wait()
+		dec_file_process = subprocess.Popen(dec_file_command, shell=True)
+		#dec_file_process.wait()
 		dec_file_output, dec_file_error = dec_file_process.communicate()
 
-	file = open('./logins_{date}.txt'.format(date=date), 'w')
+	file = open('./logins_{date}.txt'.format(date=date), 'a+')
 	file.write("{IP}={user}:{passwd}".format(IP=host.IP, user=newuser, passwd=newpass))
 
 	enc_file_command = "openssl aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:{newpass} && rm ./logins_{date}.txt".format(date=date, newpass=newpass)
