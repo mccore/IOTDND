@@ -1,5 +1,5 @@
 #!/usr/bin/env python2.7
-import subprocess, re, telnetlib, datetime, sys, os.path
+import subprocess, re, telnetlib, datetime, sys, os.path, random, string
 
 #Create a class to hold host information. I considered using a dictionary but it's easier to edit class variables
 #I'm probably going to have to change it so that each IP can have a list of services. As there is no way to know which order the services/IPs are in the list.
@@ -206,12 +206,15 @@ def main():
 		#Run the honeypot setup script on the remote system.
 		#TODO: Need to make sure that if a host has the ability to use ssh then it is. Basically, telnet should be a last resort. A way to achieve this might be to sort the hosts list by service so that ssh is on top.
 		#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual input
+		passlength=10
+		randpass = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits + string.punctuation) for _ in range(passlength))
+		print randpass
 		if host.service == "[ssh]" and host.processed == False:
 			#doSSH(host, "test", "test")
 			continue
 
 		if host.service == "[telnet]" and host.processed == False:
-			doTelnet(host)
+			doTelnet(host, "test", "test")
 			#doSSH(host, "test", "test")
 			continue
 
