@@ -208,7 +208,7 @@ def main():
 		#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual input
 		if host.service == "[ssh]" and host.processed == False:
 			#doSSH(host, "test", "test")
-			#continue
+			continue
 
 		if host.service == "[telnet]" and host.processed == False:
 			doTelnet(host)
