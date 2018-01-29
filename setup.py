@@ -29,7 +29,7 @@ def doSSH(host, newuser, newpass):
 	date=datetime.datetime.now().strftime("%Y-%m-%d")
 	if os.path.isfile("./logins_{date}.txt.enc".format(date=date)):
 		#dec_file_command = "openssl aes-256-cbc -d -a -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=newpass)
-		dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}"
+		dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=newpass)
 		dec_file_process = subprocess.Popen(dec_file_command, shell=True)
 		#dec_file_process.wait()
 		dec_file_output, dec_file_error = dec_file_process.communicate()
@@ -100,7 +100,7 @@ def doSSH(host, newuser, newpass):
 	deluser_process.wait()
 	deluser_output, deluser_error = deluser_process.communicate()
 
-def doTelnet(host):
+def doTelnet(host, newuser, newpass):
 	#First thing I'm going to do is transfer an ssh setup file via netcat. Then I'm going to run it via telnet. Only after that will telnet be blocked.
 	#TODO: Error checking?
 	#TODO: Space checking for ssh install
@@ -120,9 +120,10 @@ def doTelnet(host):
 	tn.write("df -B1 --output=avail / | sed '1d'")
 	disk_space_output = tn.read_eager() #Need to play with the eager part.
 	disk_space_output = disk_space_output.strip()
+	print "Telnet disk space {space}".format(space=disk_space_output)
 
 	install_size=235929600 #This needs to be changed. I'll have to transfer the ssh_install and watch the install size
-	if int(disk_space_output) > install_size:
+	if int(disk_space_output) < install_size:
 		print "{IP}: Listening for ssh install script".format(IP=host.IP)
 		tn.write("nc -l -p 1234 > ssh_install.sh &\r\n")
 
@@ -139,6 +140,23 @@ def doTelnet(host):
 		#print tn.read_all() #This prints literally everything that happened on the remote host. I'll leave it disabled because it clutters the terminal
 	else:
 		print "{IP}: Not enough space to install SSH".format(IP=host.IP)
+		print "{IP}: Creating encrypted password for {newuser}".format(IP=host.IP, newuser=newuser)
+		#pass_command = "openssl passwd -crypt test"
+		pass_command = "mkpasswd -m sha-512 {newpass}".format(newpass=newpass)
+		pass_process = subprocess.Popen(pass_command, stdout=subprocess.PIPE, shell=True)
+		pass_process.wait()
+		pass_output, pass_error = pass_process.communicate()
+		passhash = re.sub(r"\$", "\\$", pass_output).rstrip()
+
+		print "{IP}: Adding new user {newuser}".format(IP=host.IP, newuser=newuser)
+		tn.write('''sudo useradd -m -s /bin/bash -g sudo -p '{encpass}' {newuser}\r\n'''.format(encpass=passhash, newuser=newuser))
+
+		print "{IP}: Sudoing new user {newuser}".format(IP=host.IP, newuser=newuser)
+		tn.write('''sudo echo "{newuser} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers\r\n'''.format())
+
+		print "{IP}: Disabling old user {olduser}".format(IP=host.IP, olduser=host.user)
+		tn.write('''sudo passwd -l {user}\r\n'''.format(user=host.user))
+		tn.write("exit\r\n")
 
 def main():
 	# print command line arguments
@@ -189,11 +207,11 @@ def main():
 		#TODO: Need to make sure that if a host has the ability to use ssh then it is. Basically, telnet should be a last resort. A way to achieve this might be to sort the hosts list by service so that ssh is on top.
 		#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual input
 		if host.service == "[ssh]" and host.processed == False:
-			doSSH(host, "test", "test")
+			#doSSH(host, "test", "test")
 			#continue
 
 		if host.service == "[telnet]" and host.processed == False:
-			#doTelnet(host)
+			doTelnet(host)
 			#doSSH(host, "test", "test")
 			continue
 
