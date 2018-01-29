@@ -117,9 +117,10 @@ def doTelnet(host, newuser, newpass):
 	tn.write(host.passwd + "\r\n")
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
-	tn.write("df -B1 --output=avail / | sed '1d'")
-	disk_space_output = tn.read_all() #Need to play with the eager part.
-	disk_space_output = re.match("^[0-9]+$", disk_space_output.strip())
+	tn.write("df -B1 --output=avail / | sed '1d'\r\n")
+	disk_space_output = tn.read_eager() #Need to play with the eager part.
+	#disk_space_output = re.match("^[0-9]+$", disk_space_output.strip())
+	disk_space_output = disk_space_output.strip()
 	print "Telnet disk space {space}".format(space=disk_space_output)
 
 	install_size=235929600 #This needs to be changed. I'll have to transfer the ssh_install and watch the install size
