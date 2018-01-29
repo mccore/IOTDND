@@ -118,7 +118,7 @@ def doTelnet(host, newuser, newpass):
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
 	tn.write("df -B1 --output=avail / | sed '1d'")
-	disk_space_output = tn.read_eager() #Need to play with the eager part.
+	disk_space_output = tn.read_very_eager() #Need to play with the eager part.
 	disk_space_output = disk_space_output.strip()
 	print "Telnet disk space {space}".format(space=disk_space_output)
 
@@ -207,8 +207,7 @@ def main():
 		#TODO: Need to make sure that if a host has the ability to use ssh then it is. Basically, telnet should be a last resort. A way to achieve this might be to sort the hosts list by service so that ssh is on top.
 		#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual input
 		passlength=10
-		randpass = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits + string.punctuation) for _ in range(passlength))
-		print randpass
+		randpass = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(passlength))
 		if host.service == "[ssh]" and host.processed == False:
 			#doSSH(host, "test", "test")
 			continue
