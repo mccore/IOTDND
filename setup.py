@@ -35,6 +35,7 @@ def doSSH(host, newuser, newpass):
 
 	file = open('./logins_{date}.txt'.format(date=date), 'a+')
 	file.write("{IP}={user}:{passwd}".format(IP=host.IP, user=newuser, passwd=newpass))
+	file.close()
 
 	enc_file_command = "openssl aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:test && rm ./logins_{date}.txt".format(date=date)
 	enc_file_process = subprocess.Popen(enc_file_command, shell=True)
