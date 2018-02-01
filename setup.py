@@ -137,7 +137,7 @@ def doTelnet(host, newuser, newpass):
 	for line in disk_space_output:
 		print line
 	#disk_space_regex = re.search("^[0-9]+$", disk_space_output) #df -B1 --output=avail / | sed '1d'((.*\r\n){2})
-	#print "Telnet disk space {space}".format(space=disk_space_regex.group(0))
+	print "Telnet disk space {space}".format(space=disk_space_output[-3])
 
 	tn = telnetlib.Telnet(host.IP)
 
