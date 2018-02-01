@@ -202,6 +202,7 @@ def doTelnet(host, newuser, newpass):
 		print "{IP}: Disabling old user {olduser}".format(IP=host.IP, olduser=host.user)
 		tn.write('''sudo passwd -l {user}\r\n'''.format(user=host.user))
 		tn.write("exit\r\n")
+		tn.read_all()
 
 def main():
 	# print command line arguments
