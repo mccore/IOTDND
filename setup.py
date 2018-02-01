@@ -105,7 +105,7 @@ def doTelnet(host, newuser, newpass):
 	#TODO: Error checking?
 	#TODO: Space checking for ssh install
 	#TODO: If there is not enough space to install SSH, it should create a new user and lock the old one like doSSH does.
-	#TODO: A possible solution to having to rewrite the whole Host class is to simply check here if port 22 is open.
+	#TODO: A possible solution to having to rewrite the whole Host class is to simply check here if port 22 is open. (Working)
 	#TODO: Try to use read_all() for Telnet. Basically, for the disk space, login and run df then exit and read all
 
 	print "{IP}: Checking remote host for SSH".format(IP=host.IP)
@@ -115,9 +115,9 @@ def doTelnet(host, newuser, newpass):
 	ssh_check_output, ssh_check_error = ssh_check_process.communicate()
 	ssh_check_rc = ssh_check_process.returncode
 
-	if ssh_check_rc != 0:
-		print "{IP:} SSH is available. Skipping Telnet.".format(IP=host.IP)
-		return None
+	# if ssh_check_rc == 0:
+	# 	print "{IP:} SSH is available. Skipping Telnet.".format(IP=host.IP)
+	# 	return None
 
 	host.processed = True
 
@@ -131,6 +131,7 @@ def doTelnet(host, newuser, newpass):
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
 	tn.write("df -B1 --output=avail / | sed '1d'\r\n")
+	tn.write("exit\r\n")
 	disk_space_output = tn.read_all() #Need to play with the eager part.
 	#disk_space_output = re.match("^[0-9]+$", disk_space_output.strip())
 	disk_space_output = disk_space_output.strip()
