@@ -138,7 +138,7 @@ def doTelnet(host, newuser, newpass):
 	disk_space_iter = iter(disk_space_output)
 	for line in disk_space_iter:
 		if line.strip() == "Avail":
-			actual_disk_space = next(disk_space_output).strip()
+			actual_disk_space = next(disk_space_iter).strip()
 			print actual_disk_space
 			break
 	#disk_space_regex = re.search("^[0-9]+$", disk_space_output) #df -B1 --output=avail / | sed '1d'((.*\r\n){2})
