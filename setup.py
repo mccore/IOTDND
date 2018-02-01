@@ -121,21 +121,23 @@ def doTelnet(host, newuser, newpass):
 
 	host.processed = True
 
-	tn = telnetlib.Telnet(host.IP)
+	tn1 = telnetlib.Telnet(host.IP)
 
 	print "{IP}: Logging in".format(IP=host.IP)
-	tn.read_until("login: ")
-	tn.write(host.user + "\r\n")
-	tn.read_until("Password: ")
-	tn.write(host.passwd + "\r\n")
+	tn1.read_until("login: ")
+	tn1.write(host.user + "\r\n")
+	tn1.read_until("Password: ")
+	tn1.write(host.passwd + "\r\n")
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
-	tn.write("df -B1 --output=avail / | sed '1d'\r\n")
-	tn.write("exit\r\n")
-	disk_space_output = tn.read_all() #Need to play with the eager part.
+	tn1.write("df -B1 --output=avail / | sed '1d'\r\n")
+	tn1.write("exit\r\n")
+	disk_space_output = tn1.read_all() #Need to play with the eager part.
 	disk_space_output = re.match("^[0-9]+$", disk_space_output)
 	#disk_space_output = disk_space_output.strip()
 	print "Telnet disk space {space}".format(space=disk_space_output)
+
+	tn = telnetlib.Telnet(host.IP)
 
 	print "{IP}: Relogging in".format(IP=host.IP)
 	tn.read_until("login: ")
