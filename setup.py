@@ -112,7 +112,7 @@ def doTelnet(host, newuser, newpass):
 	ssh_check_command = "nc -z {IP} 22"
 	ssh_check_process = subprocess.Popen(ssh_check_command, stdout=subprocess.PIPE, shell=True)
 	ssh_check_process.wait()
-	ssh_check_output, ssh_check_error = ssh_check_process.communicate
+	ssh_check_output, ssh_check_error = ssh_check_process.communicate()
 	ssh_check_rc = ssh_check_process.returncode
 
 	if ssh_check_rc != 0:
