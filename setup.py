@@ -197,7 +197,7 @@ def doTelnet(host, newuser, newpass):
 		tn.write('''sudo useradd -m -s /bin/bash -g sudo -p '{encpass}' {newuser}\r\n'''.format(encpass=passhash, newuser=newuser))
 
 		print "{IP}: Sudoing new user {newuser}".format(IP=host.IP, newuser=newuser)
-		tn.write('''sudo echo "{newuser} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers\r\n'''.format())
+		tn.write('''sudo echo "{newuser} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers\r\n'''.format(newuser=newuser))
 
 		print "{IP}: Disabling old user {olduser}".format(IP=host.IP, olduser=host.user)
 		tn.write('''sudo passwd -l {user}\r\n'''.format(user=host.user))
