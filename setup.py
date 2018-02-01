@@ -135,7 +135,7 @@ def doTelnet(host, newuser, newpass):
 	disk_space_output = tn1.read_all() #Need to play with the eager part.
 	disk_space_regex = re.search("df -B1 --output=avail / | sed '1d'((.*\n){2})", disk_space_output)
 	#disk_space_output = disk_space_output.strip()
-	print "Telnet disk space {space}".format(space=disk_space_regex)
+	print "Telnet disk space {space}".format(space=disk_space_regex.group(0))
 
 	tn = telnetlib.Telnet(host.IP)
 
