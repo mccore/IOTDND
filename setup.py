@@ -135,7 +135,8 @@ def doTelnet(host, newuser, newpass):
 	disk_space_output = tn1.read_all() #Need to play with the eager part.
 	disk_space_output = disk_space_output.splitlines()
 	actual_disk_space = ""
-	for line in disk_space_output:
+	disk_space_iter = iter(disk_space_output)
+	for line in disk_space_iter:
 		if line.strip() == "Avail":
 			actual_disk_space = next(disk_space_output).strip()
 			print actual_disk_space
