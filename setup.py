@@ -191,7 +191,8 @@ def doTelnet(host, newuser, newpass):
 		pass_process = subprocess.Popen(pass_command, stdout=subprocess.PIPE, shell=True)
 		pass_process.wait()
 		pass_output, pass_error = pass_process.communicate()
-		passhash = re.sub(r"\$", "\\$", pass_output).rstrip()
+		#passhash = re.sub(r"\$", "\\$", pass_output).rstrip()
+		passhash = pass_output.rstrip()
 
 		print "{IP}: Adding new user {newuser}".format(IP=host.IP, newuser=newuser)
 		tn.write('''sudo useradd -m -s /bin/bash -g sudo -p '{encpass}' {newuser}\r\n'''.format(encpass=passhash, newuser=newuser))
