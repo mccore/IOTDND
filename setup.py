@@ -130,7 +130,7 @@ def doTelnet(host, newuser, newpass):
 	tn1.write(host.passwd + "\r\n")
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
-	tn1.write("df -B1 --output=avail / | sed '1d'\r\n")
+	tn1.write("df -B1 --output=avail /\r\n")
 	tn1.write("exit\r\n")
 	disk_space_output = tn1.read_all() #Need to play with the eager part.
 	disk_space_output = disk_space_output.splitlines()
