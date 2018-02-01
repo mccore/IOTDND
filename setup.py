@@ -105,9 +105,22 @@ def doTelnet(host, newuser, newpass):
 	#TODO: Error checking?
 	#TODO: Space checking for ssh install
 	#TODO: If there is not enough space to install SSH, it should create a new user and lock the old one like doSSH does.
-	#TODO: A possible solution to having to rewrire the whole Host class is to simply check here if port 22 is open.
+	#TODO: A possible solution to having to rewrite the whole Host class is to simply check here if port 22 is open.
+	#TODO: Try to use read_all() for Telnet. Basically, for the disk space, login and run df then exit and read all
+
+	print "{IP}: Checking remote host for SSH".format(IP=host.IP)
+	ssh_check_command = "nc -z {IP} 22"
+	ssh_check_process = subprocess.Popen(ssh_check_command, stdout=subprocess.PIPE, shell=True)
+	ssh_check_process.wait()
+	ssh_check_output, ssh_check_error = ssh_check_process.communicate
+	ssh_check_rc = ssh_check_process.returncode
+
+	if ssh_check_rc != 0:
+		print "{IP:} SSH is available. Skipping Telnet.".format(IP=host.IP)
+		return None
 
 	host.processed = True
+
 	tn = telnetlib.Telnet(host.IP)
 
 	print "{IP}: Logging in".format(IP=host.IP)
@@ -117,14 +130,14 @@ def doTelnet(host, newuser, newpass):
 	tn.write(host.passwd + "\r\n")
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
-	tn.write("echo 6565656565\r\n") #df -B1 --output=avail / | sed '1d'
-	disk_space_output = tn.read_until("\n") #Need to play with the eager part.
+	tn.write("df -B1 --output=avail / | sed '1d'\r\n")
+	disk_space_output = tn.read_all() #Need to play with the eager part.
 	#disk_space_output = re.match("^[0-9]+$", disk_space_output.strip())
 	disk_space_output = disk_space_output.strip()
 	print "Telnet disk space {space}".format(space=disk_space_output)
 
-	install_size=235929600 #This needs to be changed. I'll have to transfer the ssh_install and watch the install size
-	if int(disk_space_output) < install_size:
+	install_size=136314880
+	if int(disk_space_output) > install_size:
 		print "{IP}: Listening for ssh install script".format(IP=host.IP)
 		tn.write("nc -l -p 1234 > ssh_install.sh &\r\n")
 
@@ -141,6 +154,25 @@ def doTelnet(host, newuser, newpass):
 		#print tn.read_all() #This prints literally everything that happened on the remote host. I'll leave it disabled because it clutters the terminal
 	else:
 		print "{IP}: Not enough space to install SSH".format(IP=host.IP)
+
+		date=datetime.datetime.now().strftime("%Y-%m-%d")
+		if os.path.isfile("./logins_{date}.txt.enc".format(date=date)):
+			#dec_file_command = "openssl aes-256-cbc -d -a -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=newpass)
+			dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=newpass)
+			dec_file_process = subprocess.Popen(dec_file_command, shell=True)
+			#dec_file_process.wait()
+			dec_file_output, dec_file_error = dec_file_process.communicate()
+
+		file = open('./logins_{date}.txt'.format(date=date), 'a+')
+		file.write("{IP}={user}:{passwd}".format(IP=host.IP, user=newuser, passwd=newpass))
+		file.close()
+
+		#enc_file_command = "openssl aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:test && rm ./logins_{date}.txt".format(date=date)
+		enc_file_command = "openssl enc -aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:{newpass} && rm ./logins_{date}.txt".format(date=date, newpass=newpass)
+		enc_file_process = subprocess.Popen(enc_file_command, shell=True)
+		#enc_file_process.wait()
+		enc_file_output, enc_file_error = enc_file_process.communicate()
+
 		print "{IP}: Creating encrypted password for {newuser}".format(IP=host.IP, newuser=newuser)
 		#pass_command = "openssl passwd -crypt test"
 		pass_command = "mkpasswd -m sha-512 {newpass}".format(newpass=newpass)
