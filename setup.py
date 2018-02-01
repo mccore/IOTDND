@@ -133,9 +133,15 @@ def doTelnet(host, newuser, newpass):
 	tn.write("df -B1 --output=avail / | sed '1d'\r\n")
 	tn.write("exit\r\n")
 	disk_space_output = tn.read_all() #Need to play with the eager part.
-	disk_space_output = re.match("^[0-9]+$", disk_space_output.strip())
+	disk_space_output = re.match("^[0-9]+$", disk_space_output)
 	#disk_space_output = disk_space_output.strip()
 	print "Telnet disk space {space}".format(space=disk_space_output)
+
+	print "{IP}: Relogging in".format(IP=host.IP)
+	tn.read_until("login: ")
+	tn.write(host.user + "\r\n")
+	tn.read_until("Password: ")
+	tn.write(host.passwd + "\r\n")
 
 	install_size=136314880
 	if int(disk_space_output) > install_size:
