@@ -138,7 +138,7 @@ def doTelnet(host, newuser, newpass):
 		if line.strip() == "Avail":
 			actual_disk_space = next(disk_space_iter).strip()
 			break
-	print "Telnet disk space {space}".format(space=actual_disk_space)
+	#print "Telnet disk space {space}".format(space=actual_disk_space)
 
 	tn = telnetlib.Telnet(host.IP)
 
@@ -149,7 +149,7 @@ def doTelnet(host, newuser, newpass):
 	tn.write(host.passwd + "\r\n")
 
 	install_size=136314880
-	if int(actual_disk_space) > install_size:
+	if int(actual_disk_space) < install_size:
 		print "{IP}: Listening for ssh install script".format(IP=host.IP)
 		tn.write("nc -l -p 1234 > ssh_install.sh &\r\n")
 
