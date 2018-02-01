@@ -109,7 +109,7 @@ def doTelnet(host, newuser, newpass):
 	#TODO: Try to use read_all() for Telnet. Basically, for the disk space, login and run df then exit and read all
 
 	print "{IP}: Checking remote host for SSH".format(IP=host.IP)
-	ssh_check_command = "nc -z {IP} 22"
+	ssh_check_command = "nc -z {IP} 22".format(IP=host.IP)
 	ssh_check_process = subprocess.Popen(ssh_check_command, stdout=subprocess.PIPE, shell=True)
 	ssh_check_process.wait()
 	ssh_check_output, ssh_check_error = ssh_check_process.communicate()
