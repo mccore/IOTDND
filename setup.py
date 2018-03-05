@@ -41,7 +41,7 @@ class Host:
 
 def doSSH(host, newuser, newpass):
 	#TODO: Error check the subprocess return code
-
+	print results
 	host.processed = True
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
@@ -242,8 +242,7 @@ def doTelnet(host, newuser, newpass):
 		tn.write("exit\r\n")
 		tn.read_all()
 
-def run(host):
-	global results
+def run(host, results):
 	#Run the honeypot setup script on the remote system.
 	randpass = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(results.pass_length))
 	if host.service == "[ssh]" and host.processed == False:
@@ -318,7 +317,7 @@ def main():
 	#Also create a thread pool to speed things up if the user chooses.
 	print "Looping through hosts"
 	with concurrent.futures.ThreadPoolExecutor(max_workers=results.num_threads) as executor:
-		future_to_IP = {executor.submit(run, host): host for host in hosts}
+		future_to_IP = {executor.submit(run, host, results): host for host in hosts}
 		for IP in concurrent.futures.as_completed(future_to_IP):
 			hostIP = future_to_IP[IP]
 			try:
