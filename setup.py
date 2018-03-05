@@ -76,7 +76,7 @@ def doSSH(host, newuser, newpass, results):
 
 	print "{IP}: Creating encrypted password for {newuser}".format(IP=host.IP, newuser=newuser)
 	#pass_command = "openssl passwd -crypt test"
-	pass_command = "mkpasswd -m sha-512 {newpass}".format(newpass=newpass)
+	pass_command = "mkpasswd -m sha-512 '{newpass}'".format(newpass=newpass)
 	pass_process = subprocess.Popen(pass_command, stdout=subprocess.PIPE, shell=True)
 	pass_process.wait()
 	pass_output, pass_error = pass_process.communicate()
