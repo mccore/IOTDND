@@ -17,7 +17,7 @@ def parse_arguments():
 	parser.add_argument('-k', action='store', dest='pass_storage_type', required=True,
 											help="The way the passwords are stored. Can either be password or RSA key.\n")
 	parser.add_argument('-n', action='store', dest='network', required=True,
-											help="The network to be nmapped. Can either be one specified or the current network.\n")
+											help="The network to be nmapped with CIDR notation. Can either be one specified or the current network.\n")
 	parser.add_argument('-slp', action='store', dest='server_log_path', default=".",
 											help="The log path for the server that all the honey pots connect to. If remote use -rslp.\n")
 	parser.add_argument('-rslp', action='store', dest='remote_server_log_path', default=None,
@@ -319,7 +319,7 @@ def main():
 	print "Looping through hosts"
 	for host in hosts:
 		aThread = executor.submit(run, host)
-	executor.shutdown(wait=True)
+	#executor.shutdown(wait=True)
 
 	if results.remote_server_log_path:
 		remote_server_log_path_var = re.split("@|:", results.remote_server_log_path)
