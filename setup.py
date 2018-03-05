@@ -322,7 +322,7 @@ def main():
 			if host.processed == False:
 				host.processed = True
 				#future_to_IP.update({executor.submit(run, host, results): host})
-				future_to_IP[host] = executor.submit(run, host, results)
+				future_to_IP[executor.submit(run, host, results)] = host
 		for IP in concurrent.futures.as_completed(future_to_IP):
 			hostIP = future_to_IP[IP]
 			try:
