@@ -244,7 +244,7 @@ def doTelnet(host, newuser, newpass, results):
 def run(host, results):
 	#Run the honeypot setup script on the remote system.
 	randpass = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(results.pass_length))
-	if host.service == "[ssh]" and host.processed == False:
+	if host.service == "[ssh]":# and host.processed == False:
 		passwd = ""
 		user = ""
 		if results.pass_type == "random":
@@ -258,7 +258,7 @@ def run(host, results):
 
 		doSSH(host, user, passwd, results)
 
-	if host.service == "[telnet]" and host.processed == False:
+	if host.service == "[telnet]":# and host.processed == False:
 		passwd = ""
 		user = ""
 		if results.pass_type == "random":
