@@ -39,9 +39,8 @@ class Host:
 		self.user = user
 		self.passwd = passwd
 
-def doSSH(host, newuser, newpass):
+def doSSH(host, newuser, newpass, results):
 	#TODO: Error check the subprocess return code
-	print results
 	host.processed = True
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
@@ -134,7 +133,7 @@ def doSSH(host, newuser, newpass):
 	deluser_process.wait()
 	deluser_output, deluser_error = deluser_process.communicate()
 
-def doTelnet(host, newuser, newpass):
+def doTelnet(host, newuser, newpass, results):
 	#First thing I'm going to do is transfer an ssh setup file via netcat. Then I'm going to run it via telnet. Only after that will telnet be blocked.
 	#TODO: Error checking? More difficult than with SSH because the subprocess return code can't be checked.
 	#TODO: Disk space checking should use a regex. Assuming what comes after Avail is the correct number is dangerous if a different program writes to the terminal in between Avail and the num.
@@ -257,7 +256,7 @@ def run(host, results):
 		else:
 			user = results.user_type
 
-		doSSH(host, user, passwd)
+		doSSH(host, user, passwd, results)
 
 	if host.service == "[telnet]" and host.processed == False:
 		passwd = ""
@@ -271,8 +270,8 @@ def run(host, results):
 		else:
 			user = results.user_type
 
-		doTelnet(host, user, passwd)
-		doSSH(host, user, passwd)
+		doTelnet(host, user, passwd, results)
+		doSSH(host, user, passwd, results)
 
 def main():
 	results = parse_arguments()
