@@ -109,7 +109,6 @@ def doSSH(host, newuser, newpass, results):
 		setup_process.wait()
 		setup_output, setup_error = setup_process.communicate()
 
-		print "{IP}: Adding cron job to send JSON to report server at {server}".format(IP=host.IP, server=get_local_ip_output)
 		#List the current cron jobs, create a new one to report the json at 6AM every day, and pipe all that into crontab.
 		if results.server_address == "localhost":
 			get_local_ip_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'" #This is done to get the local IP of the device so that it can be used to send the JSONs too.
@@ -118,8 +117,10 @@ def doSSH(host, newuser, newpass, results):
 			get_local_ip_output, get_local_ip_error = get_local_ip_process.communicate()
 			get_local_ip_output = get_local_ip_output.rstrip()
 
+			print "{IP}: Adding cron job to send JSON to report server at {server}".format(IP=host.IP, server=get_local_ip_output)
 			report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -u {newuser} -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -u {newuser} -' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=get_local_ip_output, newuser=newuser)
 		else:
+			print "{IP}: Adding cron job to send JSON to report server at {server}".format(IP=host.IP, server=results.server_address)
 			report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -u {newuser} -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -u {newuser} -' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=results.server_address, newuser=newuser)
 		report_process = subprocess.Popen(report_command, stdout=subprocess.PIPE, shell=True)
 		report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
