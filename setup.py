@@ -42,16 +42,6 @@ class Host:
 def doSSH(host, newuser, newpass, results):
 	#TODO: Error check the subprocess return code
 	host.processed = True
-	print "{IP}: Checking remote host for Honeypot".format(IP=host.IP)
-	ssh_check_command = "nc -z {IP} 1022".format(IP=host.IP)
-	ssh_check_process = subprocess.Popen(ssh_check_command, stdout=subprocess.PIPE, shell=True)
-	ssh_check_process.wait()
-	ssh_check_output, ssh_check_error = ssh_check_process.communicate()
-	ssh_check_rc = ssh_check_process.returncode
-
-	if ssh_check_rc == 0:
-		print "{IP:} Honeypot appears to already be installed.".format(IP=host.IP)
-		return None
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
 	disk_space_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'df -B1 --output=avail / | sed '1d''".format(passwd=host.passwd, user=host.user, IP=host.IP)
@@ -326,7 +316,11 @@ def main():
 	#Also create a thread pool to speed things up if the user chooses.
 	print "Looping through hosts"
 	with concurrent.futures.ThreadPoolExecutor(max_workers=results.num_threads) as executor:
-		future_to_IP = {executor.submit(run, host, results): host for host in hosts}
+		future_to_IP = {}
+		for host in hosts:
+			if host.processed == False:
+				host.processed = True
+				executor.submit(run, host, results)
 		for IP in concurrent.futures.as_completed(future_to_IP):
 			hostIP = future_to_IP[IP]
 			try:
