@@ -315,7 +315,7 @@ def main():
 
 	#Now loop through the addresses and their respective protocol (telnet or ssh).
 	#Also create a thread pool to speed things up if the user chooses.
-	executor = ThreadPoolExecutor(max_workers=num_threads)
+	executor = concurrent.futures.ThreadPoolExecutor(max_workers=num_threads)
 	print "Looping through hosts"
 	for host in hosts:
 		aThread = executor.submit(run, host)
