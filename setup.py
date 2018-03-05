@@ -320,7 +320,7 @@ def main():
 		for host in hosts:
 			if host.processed == False:
 				host.processed = True
-				futures_to_IP.update(executor.submit(run, host, results))
+				future_to_IP.update(executor.submit(run, host, results))
 		for IP in concurrent.futures.as_completed(future_to_IP):
 			hostIP = future_to_IP[IP]
 			try:
