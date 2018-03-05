@@ -1,10 +1,36 @@
 #!/usr/bin/env python2.7
-import subprocess, re, telnetlib, datetime, sys, os.path, random, string
+import subprocess, re, telnetlib, datetime, sys, os.path, random, string, argparse, threading, concurrent.futures
+results = None
 
-#Create a class to hold host information. I considered using a dictionary but it's easier to edit class variables
-#I'm probably going to have to change it so that each IP can have a list of services. As there is no way to know which order the services/IPs are in the list.
-#This means that it is possible that if an IP has both Telnet and SSH that Telnet can be found first and SSH will attempt to be installed when none of that should happen. SSH should be used.
-#Also I will probably have to make a Service class so that I can have a list of Services in each Host object since each service has its own user and pass.
+#Parse arguments
+def parse_arguments():
+	parser = argparse.ArgumentParser(description="")
+
+	parser.add_argument('-sa', action='store', dest='server_address', default="localhost",
+											help="The server address for the honey pots to send to.")
+	parser.add_argument('-u', action='store', dest='user_type', default="procedurally",
+											help="The way users work. Can either be a master user or a procedurally generated user.")
+	parser.add_argument('-pw', action='store', dest='pass_type', default="random",
+											help="The way passwords work. Can either be a master pass or a random one.")
+	parser.add_argument('-pwl', action='store', dest='pass_length', default=10,
+											help="The length of passwords if random is chosen. Default is 10.")
+	parser.add_argument('-k', action='store', dest='pass_storage_type', required=True,
+											help="The way the passwords are stored. Can either be password or RSA key.")
+	parser.add_argument('-n', action='store', dest='network', required=True,
+											help="The network to be nmapped. Can either be one specified or the current network.")
+	parser.add_argument('-slp', action='store', dest='server_log_path', default=".",
+											help="The log path for the server that all the honey pots connect to. If remote use -rslp.")
+	parser.add_argument('-rslp', action='store', dest='remote_server_log_path', default=None,
+											help="The remote log path for the server that all the honey pots connect to. Give in the form <user>@<host>:<path>. You will be prompted for a password.\n <host> must be the same as in the -sa option which must be used in conjunciton with -rslp.")
+	parser.add_argument('-lp', action='store', dest='login_path', default="./logins",
+											help="The path for all of the login text files to be stored in.")
+	parser.add_argument('-t', action='store', dest='num_threads', default=1,
+											help="The number of threads to be used. The default is 1.")
+
+	results = parser.parse_args()
+	return results
+
+#Create a class to hold host information.
 class Host:
 	def __init__(self, IP, service, user, passwd):
 		self.processed = False
@@ -14,11 +40,11 @@ class Host:
 		self.passwd = passwd
 
 def doSSH(host, newuser, newpass):
-	#TODO: Error checking
+	#TODO: Error check the subprocess return code
 
 	host.processed = True
 
-	print "{IP}: Checking available disk space".format(IP=host.IP) #
+	print "{IP}: Checking available disk space".format(IP=host.IP)
 	disk_space_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'df -B1 --output=avail / | sed '1d''".format(passwd=host.passwd, user=host.user, IP=host.IP)
 	disk_space_process = subprocess.Popen(disk_space_command, stdout=subprocess.PIPE, shell=True)
 	disk_space_process.wait()
@@ -28,8 +54,10 @@ def doSSH(host, newuser, newpass):
 
 	date=datetime.datetime.now().strftime("%Y-%m-%d")
 	if os.path.isfile("./logins_{date}.txt.enc".format(date=date)):
-		#dec_file_command = "openssl aes-256-cbc -d -a -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=newpass)
-		dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=newpass)
+		if ".pem" in results.pass_storage_type or ".key" in results.pass_storage_type:
+			dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -kfile {newpass}".format(date=date, newpass=results.pass_storage_type)
+		else
+			dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=results.pass_storage_type)
 		dec_file_process = subprocess.Popen(dec_file_command, shell=True)
 		#dec_file_process.wait()
 		dec_file_output, dec_file_error = dec_file_process.communicate()
@@ -38,8 +66,10 @@ def doSSH(host, newuser, newpass):
 	file.write("{IP}={user}:{passwd}".format(IP=host.IP, user=newuser, passwd=newpass))
 	file.close()
 
-	#enc_file_command = "openssl aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:test && rm ./logins_{date}.txt".format(date=date)
-	enc_file_command = "openssl enc -aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:{newpass} && rm ./logins_{date}.txt".format(date=date, newpass=newpass)
+	if ".pem" in results.pass_storage_type or ".key" in results.pass_storage_type:
+		enc_file_command = "openssl enc -aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -kfile {newpass} && rm ./logins_{date}.txt".format(date=date, newpass=results.pass_storage_type)
+	else
+		enc_file_command = "openssl enc -aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:{newpass} && rm ./logins_{date}.txt".format(date=date, newpass=results.pass_storage_type)
 	enc_file_process = subprocess.Popen(enc_file_command, shell=True)
 	#enc_file_process.wait()
 	enc_file_output, enc_file_error = enc_file_process.communicate()
@@ -80,14 +110,18 @@ def doSSH(host, newuser, newpass):
 		setup_process.wait()
 		setup_output, setup_error = setup_process.communicate()
 
-		get_local_ip_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'" #This is done to get the local IP of the device so that it can be used to send the JSONs too.
-		get_local_ip_process = subprocess.Popen(get_local_ip_command, stdout=subprocess.PIPE, shell=True)
-		get_local_ip_process.wait()
-		get_local_ip_output, get_local_ip_error = get_local_ip_process.communicate()
-		get_local_ip_output = get_local_ip_output.rstrip()
-
 		print "{IP}: Adding cron job to send JSON to report server at {server}".format(IP=host.IP, server=get_local_ip_output)
-		report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -u {newuser} -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -u {newuser} -' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=get_local_ip_output, newuser=newuser) #List the current cron jobs, create a new one to report the json at 6AM every day, and pipe all that into crontab.
+		#List the current cron jobs, create a new one to report the json at 6AM every day, and pipe all that into crontab.
+		if results.server_address == "localhost":
+			get_local_ip_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'" #This is done to get the local IP of the device so that it can be used to send the JSONs too.
+			get_local_ip_process = subprocess.Popen(get_local_ip_command, stdout=subprocess.PIPE, shell=True)
+			get_local_ip_process.wait()
+			get_local_ip_output, get_local_ip_error = get_local_ip_process.communicate()
+			get_local_ip_output = get_local_ip_output.rstrip()
+
+			report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -u {newuser} -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -u {newuser} -' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=get_local_ip_output, newuser=newuser)
+		else
+			report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -u {newuser} -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -u {newuser} -' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=results.server_address, newuser=newuser)
 		report_process = subprocess.Popen(report_command, stdout=subprocess.PIPE, shell=True)
 		report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 		report_output, report_error = report_process.communicate()
@@ -102,9 +136,9 @@ def doSSH(host, newuser, newpass):
 
 def doTelnet(host, newuser, newpass):
 	#First thing I'm going to do is transfer an ssh setup file via netcat. Then I'm going to run it via telnet. Only after that will telnet be blocked.
-	#TODO: Error checking?
-	#TODO: Space checking for ssh install
-	#TODO: If there is not enough space to install SSH, it should create a new user and lock the old one like doSSH does.
+	#TODO: Error checking? More difficult than with SSH because the subprocess return code can't be checked.
+	#TODO: Disk space checking should use a regex. Assuming what comes after Avail is the correct number is dangerous if a different program writes to the terminal in between Avail and the num.
+	#			 Other option is to pipe the output to a file and transfer it back to the device to read from it since it will be free of contamination from stdout.
 
 	print "{IP}: Checking remote host for SSH".format(IP=host.IP)
 	ssh_check_command = "nc -z {IP} 22".format(IP=host.IP)
@@ -113,9 +147,9 @@ def doTelnet(host, newuser, newpass):
 	ssh_check_output, ssh_check_error = ssh_check_process.communicate()
 	ssh_check_rc = ssh_check_process.returncode
 
-	# if ssh_check_rc == 0:
-	# 	print "{IP:} SSH is available. Skipping Telnet.".format(IP=host.IP)
-	# 	return None
+	if ssh_check_rc == 0:
+		print "{IP:} SSH is available. Skipping Telnet.".format(IP=host.IP)
+		return None
 
 	host.processed = True
 
@@ -130,7 +164,7 @@ def doTelnet(host, newuser, newpass):
 	print "{IP}: Checking available disk space".format(IP=host.IP)
 	tn1.write("df -B1 --output=avail /\r\n")
 	tn1.write("exit\r\n")
-	disk_space_output = tn1.read_all() #Need to play with the eager part.
+	disk_space_output = tn1.read_all()
 	disk_space_output = disk_space_output.splitlines()
 	actual_disk_space = ""
 	disk_space_iter = iter(disk_space_output)
@@ -149,7 +183,7 @@ def doTelnet(host, newuser, newpass):
 	tn.write(host.passwd + "\r\n")
 
 	install_size=136314880
-	if int(actual_disk_space) < install_size:
+	if int(actual_disk_space) > install_size:
 		print "{IP}: Listening for ssh install script".format(IP=host.IP)
 		tn.write("nc -l -p 1234 > ssh_install.sh &\r\n")
 
@@ -169,8 +203,10 @@ def doTelnet(host, newuser, newpass):
 
 		date=datetime.datetime.now().strftime("%Y-%m-%d")
 		if os.path.isfile("./logins_{date}.txt.enc".format(date=date)):
-			#dec_file_command = "openssl aes-256-cbc -d -a -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=newpass)
-			dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=newpass)
+			if ".pem" in results.pass_storage_type or ".key" in results.pass_storage_type:
+				dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -kfile {newpass}".format(date=date, newpass=results.pass_storage_type)
+			else
+				dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=results.pass_storage_type)
 			dec_file_process = subprocess.Popen(dec_file_command, shell=True)
 			#dec_file_process.wait()
 			dec_file_output, dec_file_error = dec_file_process.communicate()
@@ -179,8 +215,10 @@ def doTelnet(host, newuser, newpass):
 		file.write("{IP}={user}:{passwd}".format(IP=host.IP, user=newuser, passwd=newpass))
 		file.close()
 
-		#enc_file_command = "openssl aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:test && rm ./logins_{date}.txt".format(date=date)
-		enc_file_command = "openssl enc -aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:{newpass} && rm ./logins_{date}.txt".format(date=date, newpass=newpass)
+		if ".pem" in results.pass_storage_type or ".key" in results.pass_storage_type:
+			enc_file_command = "openssl enc -aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -kfile {newpass} && rm ./logins_{date}.txt".format(date=date, newpass=results.pass_storage_type)
+		else
+			enc_file_command = "openssl enc -aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:{newpass} && rm ./logins_{date}.txt".format(date=date, newpass=results.pass_storage_type)
 		enc_file_process = subprocess.Popen(enc_file_command, shell=True)
 		#enc_file_process.wait()
 		enc_file_output, enc_file_error = enc_file_process.communicate()
@@ -191,7 +229,6 @@ def doTelnet(host, newuser, newpass):
 		pass_process = subprocess.Popen(pass_command, stdout=subprocess.PIPE, shell=True)
 		pass_process.wait()
 		pass_output, pass_error = pass_process.communicate()
-		#passhash = re.sub(r"\$", "\\$", pass_output).rstrip()
 		passhash = pass_output.rstrip()
 
 		print "{IP}: Adding new user {newuser}".format(IP=host.IP, newuser=newuser)
@@ -205,15 +242,45 @@ def doTelnet(host, newuser, newpass):
 		tn.write("exit\r\n")
 		tn.read_all()
 
+def run(host):
+	#Run the honeypot setup script on the remote system.
+	randpass = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(pass_length))
+	if host.service == "[ssh]" and host.processed == False:
+		passwd = ""
+		user = ""
+		if results.pass_type == "random":
+			passwd = randpass
+		else
+			passwd = results.pass_type
+		if results.user_type == "procedurally":
+			user = "user_{host}".format(host=host.IP)
+		else
+			user = results.user_type
+
+		doSSH(host, user, passwd)
+
+	if host.service == "[telnet]" and host.processed == False:
+		passwd = ""
+		user = ""
+		if results.pass_type == "random":
+			passwd = randpass
+		else
+			passwd = results.pass_type
+		if results.user_type == "procedurally":
+			user = "user_{host}".format(host=host.IP)
+		else
+			user = results.user_type
+
+		doTelnet(host, user, passwd)
+		doSSH(host, user, passwd)
+
 def main():
-	# print command line arguments
-	for arg in sys.argv[1:]:
-		print arg
+	results = parse_arguments()
 
 	#First I need to nmap to get the hosts.gnmap file.
-	#TODO: The IP address range should be an argument. Default behavior should be to use the range of the default gateway
+	#TODO: The IP address range should be an argument.
 	print "Nmapping network"
-	nmap_command = "nmap -oA hosts 192.168.1.0/24"
+	nmap_command = "nmap -oA hosts {network}".format(network=results.network)
 	nmap_process = subprocess.Popen(nmap_command, stdout=subprocess.PIPE, shell=True)
 	nmap_output, nmap_error = nmap_process.communicate()
 
@@ -229,7 +296,6 @@ def main():
 		output_as_list.append(aChar)
 	real_output = ''.join(output_as_list).split('\n')
 
-	#I should make sure there aren't any duplicates in the hosts list. I should allow multiple of the same IPs but only one of each service.
 	#Create the host objects for the next for loop
 	print "Processing hosts"
 	hosts = []
@@ -248,26 +314,25 @@ def main():
 			hosts.append(aHost)
 
 	#Now loop through the addresses and their respective protocol (telnet or ssh).
+	#Also create a thread pool to speed things up if the user chooses.
+	executor = ThreadPoolExecutor(max_workers=num_threads)
 	print "Looping through hosts"
 	for host in hosts:
-		#Run the honeypot setup script on the remote system.
-		#TODO: Need to make sure that if a host has the ability to use ssh then it is. Basically, telnet should be a last resort. A way to achieve this might be to sort the hosts list by service so that ssh is on top.
-		#TODO: Somehow doSSH needs to take in a new user and password. Perhaps this whole file should have arguments for one master user and password combo, procedural generation, or manual input
-		passlength=10
-		randpass = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(passlength))
-		if host.service == "[ssh]" and host.processed == False:
-			#doSSH(host, "test", "test")
-			continue
+		aThread = executor.submit(run, host)
+	executor.shutdown(wait=True)
 
-		if host.service == "[telnet]" and host.processed == False:
-			doTelnet(host, "test", "test")
-			#doSSH(host, "test", "test")
-			continue
-
-	print "Creating local cron command and starting server"
-	cron_command = '''(crontab -l ; echo "@reboot ~/IOTDND/report_server.sh {logpath}") | crontab - ; chmod +x ~/IOTDND/report_server.sh && ~/IOTDND/report_server.sh {logpath} &'''.format(logpath="~/IOTDND")
+	if results.remote_server_log_path:
+		remote_server_log_path_var = re.split("@|:", results.remote_server_log_path)
+		remote_user = remote_server_log_path_var[0]
+		remote_host = remote_server_log_path_var[1]
+		remote_path = remote_server_log_path_var[2]
+		print "Creating remote cron command and starting server at {server}".format(server=remote_host)
+		cron_command = '''cat report_server.sh | ssh {user}@{host} 'cat - > report_server.sh && (crontab -l ; echo "@reboot ~/report_server.sh {logpath}") | crontab - ; chmod +x ~/report_server.sh && ~/report_server.sh {logpath} &' '''.format(user=remote_user, host=remote_host, logpath=remote_path)
+	else
+		print "Creating local cron command and starting server"
+		cron_command = '''(crontab -l ; echo "@reboot ~/IOTDND/report_server.sh {logpath}") | crontab - ; chmod +x ~/IOTDND/report_server.sh && ~/IOTDND/report_server.sh {logpath} &'''.format(logpath=results.server_log_path)
 	cron_process = subprocess.Popen(cron_command, shell=True)
-	#cron_process.wait()
+	cron_process.wait()
 	cron_output, cron_error = cron_process.communicate()
 
 if __name__ == "__main__":
