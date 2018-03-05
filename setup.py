@@ -317,10 +317,12 @@ def main():
 	print "Looping through hosts"
 	with concurrent.futures.ThreadPoolExecutor(max_workers=results.num_threads) as executor:
 		future_to_IP = {}
+		#future_to_IP = {executor.submit(run, host, results): host for host in hosts}
 		for host in hosts:
 			if host.processed == False:
 				host.processed = True
-				future_to_IP.update({executor.submit(run, host, results): host})
+				#future_to_IP.update({executor.submit(run, host, results): host})
+				future_to_IP[host] = executor.submit(run, host, results)
 		for IP in concurrent.futures.as_completed(future_to_IP):
 			hostIP = future_to_IP[IP]
 			try:
