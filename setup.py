@@ -56,7 +56,7 @@ def doSSH(host, newuser, newpass):
 	if os.path.isfile("./logins_{date}.txt.enc".format(date=date)):
 		if ".pem" in results.pass_storage_type or ".key" in results.pass_storage_type:
 			dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -kfile {newpass}".format(date=date, newpass=results.pass_storage_type)
-		else
+		else:
 			dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=results.pass_storage_type)
 		dec_file_process = subprocess.Popen(dec_file_command, shell=True)
 		#dec_file_process.wait()
@@ -68,7 +68,7 @@ def doSSH(host, newuser, newpass):
 
 	if ".pem" in results.pass_storage_type or ".key" in results.pass_storage_type:
 		enc_file_command = "openssl enc -aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -kfile {newpass} && rm ./logins_{date}.txt".format(date=date, newpass=results.pass_storage_type)
-	else
+	else:
 		enc_file_command = "openssl enc -aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:{newpass} && rm ./logins_{date}.txt".format(date=date, newpass=results.pass_storage_type)
 	enc_file_process = subprocess.Popen(enc_file_command, shell=True)
 	#enc_file_process.wait()
@@ -120,7 +120,7 @@ def doSSH(host, newuser, newpass):
 			get_local_ip_output = get_local_ip_output.rstrip()
 
 			report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -u {newuser} -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -u {newuser} -' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=get_local_ip_output, newuser=newuser)
-		else
+		else:
 			report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -u {newuser} -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -u {newuser} -' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=results.server_address, newuser=newuser)
 		report_process = subprocess.Popen(report_command, stdout=subprocess.PIPE, shell=True)
 		report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
@@ -205,7 +205,7 @@ def doTelnet(host, newuser, newpass):
 		if os.path.isfile("./logins_{date}.txt.enc".format(date=date)):
 			if ".pem" in results.pass_storage_type or ".key" in results.pass_storage_type:
 				dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -kfile {newpass}".format(date=date, newpass=results.pass_storage_type)
-			else
+			else:
 				dec_file_command = "openssl enc -a -d -aes-256-cbc -in ./logins_{date}.txt.enc -out ./logins_{date}.txt -k pass:{newpass}".format(date=date, newpass=results.pass_storage_type)
 			dec_file_process = subprocess.Popen(dec_file_command, shell=True)
 			#dec_file_process.wait()
@@ -217,7 +217,7 @@ def doTelnet(host, newuser, newpass):
 
 		if ".pem" in results.pass_storage_type or ".key" in results.pass_storage_type:
 			enc_file_command = "openssl enc -aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -kfile {newpass} && rm ./logins_{date}.txt".format(date=date, newpass=results.pass_storage_type)
-		else
+		else:
 			enc_file_command = "openssl enc -aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -k pass:{newpass} && rm ./logins_{date}.txt".format(date=date, newpass=results.pass_storage_type)
 		enc_file_process = subprocess.Popen(enc_file_command, shell=True)
 		#enc_file_process.wait()
@@ -250,11 +250,11 @@ def run(host):
 		user = ""
 		if results.pass_type == "random":
 			passwd = randpass
-		else
+		else:
 			passwd = results.pass_type
 		if results.user_type == "procedurally":
 			user = "user_{host}".format(host=host.IP)
-		else
+		else:
 			user = results.user_type
 
 		doSSH(host, user, passwd)
@@ -264,11 +264,11 @@ def run(host):
 		user = ""
 		if results.pass_type == "random":
 			passwd = randpass
-		else
+		else:
 			passwd = results.pass_type
 		if results.user_type == "procedurally":
 			user = "user_{host}".format(host=host.IP)
-		else
+		else:
 			user = results.user_type
 
 		doTelnet(host, user, passwd)
@@ -328,7 +328,7 @@ def main():
 		remote_path = remote_server_log_path_var[2]
 		print "Creating remote cron command and starting server at {server}".format(server=remote_host)
 		cron_command = '''cat report_server.sh | ssh {user}@{host} 'cat - > report_server.sh && (crontab -l ; echo "@reboot ~/report_server.sh {logpath}") | crontab - ; chmod +x ~/report_server.sh && ~/report_server.sh {logpath} &' '''.format(user=remote_user, host=remote_host, logpath=remote_path)
-	else
+	else:
 		print "Creating local cron command and starting server"
 		cron_command = '''(crontab -l ; echo "@reboot ~/IOTDND/report_server.sh {logpath}") | crontab - ; chmod +x ~/IOTDND/report_server.sh && ~/IOTDND/report_server.sh {logpath} &'''.format(logpath=results.server_log_path)
 	cron_process = subprocess.Popen(cron_command, shell=True)
