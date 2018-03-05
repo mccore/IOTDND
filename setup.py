@@ -7,25 +7,25 @@ def parse_arguments():
 	parser = argparse.ArgumentParser(description="")
 
 	parser.add_argument('-sa', action='store', dest='server_address', default="localhost",
-											help="The server address for the honey pots to send to.")
+											help="The server address for the honey pots to send to.\n")
 	parser.add_argument('-u', action='store', dest='user_type', default="procedurally",
-											help="The way users work. Can either be a master user or a procedurally generated user.")
+											help="The way users work. Can either be a master user or a procedurally generated user.\n")
 	parser.add_argument('-pw', action='store', dest='pass_type', default="random",
-											help="The way passwords work. Can either be a master pass or a random one.")
+											help="The way passwords work. Can either be a master pass or a random one.\n")
 	parser.add_argument('-pwl', action='store', dest='pass_length', default=10,
-											help="The length of passwords if random is chosen. Default is 10.")
+											help="The length of passwords if random is chosen. Default is 10.\n")
 	parser.add_argument('-k', action='store', dest='pass_storage_type', required=True,
-											help="The way the passwords are stored. Can either be password or RSA key.")
+											help="The way the passwords are stored. Can either be password or RSA key.\n")
 	parser.add_argument('-n', action='store', dest='network', required=True,
-											help="The network to be nmapped. Can either be one specified or the current network.")
+											help="The network to be nmapped. Can either be one specified or the current network.\n")
 	parser.add_argument('-slp', action='store', dest='server_log_path', default=".",
-											help="The log path for the server that all the honey pots connect to. If remote use -rslp.")
+											help="The log path for the server that all the honey pots connect to. If remote use -rslp.\n")
 	parser.add_argument('-rslp', action='store', dest='remote_server_log_path', default=None,
-											help="The remote log path for the server that all the honey pots connect to. Give in the form <user>@<host>:<path>. You will be prompted for a password.\n <host> must be the same as in the -sa option which must be used in conjunciton with -rslp.")
+											help="The remote log path for the server that all the honey pots connect to. Give in the form <user>@<host>:<path>. You will be prompted for a password.\n <host> must be the same as in the -sa option which must be used in conjunciton with -rslp.\n")
 	parser.add_argument('-lp', action='store', dest='login_path', default="./logins",
-											help="The path for all of the login text files to be stored in.")
+											help="The path for all of the login text files to be stored in.\n")
 	parser.add_argument('-t', action='store', dest='num_threads', default=1,
-											help="The number of threads to be used. The default is 1.")
+											help="The number of threads to be used. The default is 1.\n")
 
 	results = parser.parse_args()
 	return results
