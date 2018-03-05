@@ -1,7 +1,6 @@
 #!/usr/bin/env python2.7
 import subprocess, re, telnetlib, datetime, sys, os.path, random, string, argparse, threading, concurrent.futures
 results = None
-hosts = None
 
 #Parse arguments
 def parse_arguments():
@@ -43,6 +42,16 @@ class Host:
 def doSSH(host, newuser, newpass, results):
 	#TODO: Error check the subprocess return code
 	host.processed = True
+	print "{IP}: Checking remote host for Honeypot".format(IP=host.IP)
+	ssh_check_command = "nc -z {IP} 1022".format(IP=host.IP)
+	ssh_check_process = subprocess.Popen(ssh_check_command, stdout=subprocess.PIPE, shell=True)
+	ssh_check_process.wait()
+	ssh_check_output, ssh_check_error = ssh_check_process.communicate()
+	ssh_check_rc = ssh_check_process.returncode
+
+	if ssh_check_rc == 0:
+		print "{IP:} Honeypot appears to already be installed.".format(IP=host.IP)
+		return None
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
 	disk_space_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'df -B1 --output=avail / | sed '1d''".format(passwd=host.passwd, user=host.user, IP=host.IP)
@@ -73,7 +82,6 @@ def doSSH(host, newuser, newpass, results):
 	enc_file_process = subprocess.Popen(enc_file_command, shell=True)
 	#enc_file_process.wait()
 	enc_file_output, enc_file_error = enc_file_process.communicate()
-
 
 	print "{IP}: Creating encrypted password for {newuser}".format(IP=host.IP, newuser=newuser)
 	#pass_command = "openssl passwd -crypt test"
@@ -244,7 +252,6 @@ def doTelnet(host, newuser, newpass, results):
 		tn.read_all()
 
 def run(host, results):
-	global hosts
 	#Run the honeypot setup script on the remote system.
 	randpass = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(results.pass_length))
 	if host.service == "[ssh]" and host.processed == False:
