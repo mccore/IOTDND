@@ -315,11 +315,20 @@ def main():
 
 	#Now loop through the addresses and their respective protocol (telnet or ssh).
 	#Also create a thread pool to speed things up if the user chooses.
-	executor = concurrent.futures.ThreadPoolExecutor(max_workers=results.num_threads)
 	print "Looping through hosts"
-	for host in hosts:
-		aThread = executor.submit(run, host)
-	#executor.shutdown(wait=True)
+	with concurrent.futures.ThreadPoolExecutor(max_workers=results.num_threads) as executor:
+		future_to_IP = {executor.submit(run, host): host for host in hosts}
+		for IP in in concurrent.futures.as_completed(future_to_IP):
+			hostIP = future_to_IP[IP]
+			try:
+				data = IP.result()
+			except Exception as exc:
+				print "{IP} generated an exception {EXC}".format(IP=hostIP, EXC=exc)
+			else:
+				print "{DATA}".format(DATA=data)
+		# for host in hosts:
+		# 	aThread = executor.submit(run, host)
+		# executor.shutdown(wait=True)
 
 	if results.remote_server_log_path:
 		remote_server_log_path_var = re.split("@|:", results.remote_server_log_path)
