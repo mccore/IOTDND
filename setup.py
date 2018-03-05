@@ -318,7 +318,7 @@ def main():
 	print "Looping through hosts"
 	with concurrent.futures.ThreadPoolExecutor(max_workers=results.num_threads) as executor:
 		future_to_IP = {executor.submit(run, host): host for host in hosts}
-		for IP in in concurrent.futures.as_completed(future_to_IP):
+		for IP in concurrent.futures.as_completed(future_to_IP):
 			hostIP = future_to_IP[IP]
 			try:
 				data = IP.result()
