@@ -39,10 +39,10 @@ class Service:
 
 #Create a class to hold host information.
 class Host:
-	def __init__(self, IP, services):
+	def __init__(self, IP, service):
 		self.processed = False
 		self.IP = IP
-		self.services(service)
+		self.services = self.services.append(service)
 
 def doSSH(host, service, newuser, newpass, results):
 	#TODO: Error check the subprocess return code
