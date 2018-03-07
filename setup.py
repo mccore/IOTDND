@@ -40,7 +40,6 @@ class Service:
 #Create a class to hold host information.
 class Host:
 	def __init__(self, IP, service):
-		self.processed = False
 		self.IP = IP
 		self.services = []
 		self.services.append(service)
@@ -251,7 +250,6 @@ def run(host, results):
 	#Run the honeypot setup script on the remote system.
 	randpass = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(results.pass_length))
 	if "[ssh]" in [service.protocol for service in host.services]:
-		host.processed = True
 		passwd = ""
 		user = ""
 		aService = None
@@ -269,7 +267,6 @@ def run(host, results):
 
 		doSSH(host, aService, user, passwd, results)
 	elif "[telnet]" in [service.protocol for service in host.services]:
-		host.processed = True
 		passwd = ""
 		user = ""
 		aService = None
@@ -288,13 +285,12 @@ def run(host, results):
 		doTelnet(host, aService, user, passwd, results)
 		doSSH(host, aService, user, passwd, results)
 	else:
-		print "Something has gon horribly wrong in run()"
+		print "The system is not prepared to handle the {proto} protocol".format(proto=aService.protocol)
 
 def main():
 	results = parse_arguments()
 
 	#First I need to nmap to get the hosts.gnmap file.
-	#TODO: The IP address range should be an argument.
 	print "Nmapping network"
 	nmap_command = "nmap -oA hosts {network}".format(network=results.network)
 	nmap_process = subprocess.Popen(nmap_command, stdout=subprocess.PIPE, shell=True)
@@ -339,13 +335,7 @@ def main():
 	#Also create a thread pool to speed things up if the user chooses.
 	print "Looping through hosts"
 	with concurrent.futures.ThreadPoolExecutor(max_workers=results.num_threads) as executor:
-		future_to_IP = {}
-		#future_to_IP = {executor.submit(run, host, results): host for host in hosts}
-		for host in hosts:
-			if host.processed == False:
-				#host.processed = True
-				#future_to_IP.update({executor.submit(run, host, results): host})
-				future_to_IP[executor.submit(run, host, results)] = host
+		future_to_IP = {executor.submit(run, host, results): host for host in hosts}
 		for IP in concurrent.futures.as_completed(future_to_IP):
 			hostIP = future_to_IP[IP]
 			try:
@@ -353,10 +343,7 @@ def main():
 			except Exception as exc:
 				print "{IP} generated an exception {EXC}".format(IP=hostIP, EXC=exc)
 			else:
-				print "{DATA}".format(DATA=data)
-		# for host in hosts:
-		# 	aThread = executor.submit(run, host)
-		# executor.shutdown(wait=True)
+				print """{DATA}""".format(DATA=data)
 
 	if results.remote_server_log_path:
 		remote_server_log_path_var = re.split("@|:", results.remote_server_log_path)
