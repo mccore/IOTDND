@@ -39,7 +39,7 @@ class Service:
 
 #Create a class to hold host information.
 class Host:
-	def __init__(self, IP, service):
+	def __init__(self, IP, services):
 		self.processed = False
 		self.IP = IP
 		self.services(service)
