@@ -6,6 +6,8 @@ fi
 if [ -x "$(command -v yum)" ]; then
 	sudo yum install -y openssl-devel libffi-devel make automake gcc gcc-c++ kernel-devel libpython-devel python27 python27-devel python27-pip python27-setuptools python27-tools python27-virtualenv
 	sudo /usr/bin/easy_install virtualenv
+	sudo pip install --upgrade incremental
+	sudo pip install twisted
 fi
 #sudo adduser --gecos "" --disabled-password cowrie && sudo su - cowrie << EOF
 sudo useradd -m -s /bin/bash cowrie && sudo su - cowrie << EOF
