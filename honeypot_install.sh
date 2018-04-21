@@ -5,6 +5,7 @@ if [ -x "$(command -v apt-get)" ]; then
 fi
 if [ -x "$(command -v yum)" ]; then
 	sudo yum install -y python-virtualenv openssl-devel libffi-devel make automake gcc gcc-c++ kernel-devel libpython-devel python27 python2-virtualenv
+	sudo /usr/bin/easy_install virtualenv
 fi
 #sudo adduser --gecos "" --disabled-password cowrie && sudo su - cowrie << EOF
 sudo useradd -m -s /bin/bash cowrie && sudo su - cowrie << EOF
