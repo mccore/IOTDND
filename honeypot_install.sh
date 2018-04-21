@@ -6,7 +6,8 @@ fi
 if [ -x "$(command -v yum)" ]; then
 	sudo yum install -y python-virtualenv openssl-devel libffi-devel make automake gcc gcc-c++ kernel-devel libpython-devel python27
 fi
-sudo adduser --gecos "" --disabled-password cowrie && sudo su - cowrie << EOF
+#sudo adduser --gecos "" --disabled-password cowrie && sudo su - cowrie << EOF
+sudo useradd -m -s /bin/bash cowrie && sudo su - cowrie << EOF
 wget --no-check-certificate --content-disposition http://github.com/mccore/cowrie/archive/master.zip
 unzip cowrie-master.zip && rm cowrie-master.zip && mv cowrie-master/ cowrie/
 cd cowrie && cp cowrie.cfg.dist cowrie.cfg

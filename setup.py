@@ -87,7 +87,8 @@ def doSSH(host, service, newuser, newpass, results):
 
 	print "{IP}: Adding new user {newuser}".format(IP=host.IP, newuser=newuser)
 	#newuser_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} -p 1022 'sudo adduser --gecos "" --disabled-password {anewuser} && echo {anewuser}:{anewuserpassword} | sudo chpasswd'".format(passwd=service.passwd, user=service.user, IP=host.IP, anewuser=newuser, anewuserpassword=newpass)
-	newuser_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} "sudo useradd -m -s /bin/bash -g sudo -p '{encpass}' {newuser}"'''.format(passwd=service.passwd, user=service.user, IP=host.IP, encpass=passhash, newuser=newuser)
+	#newuser_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} "sudo useradd -m -s /bin/bash -g sudo -p '{encpass}' {newuser}"'''.format(passwd=service.passwd, user=service.user, IP=host.IP, encpass=passhash, newuser=newuser)
+	newuser_command = '''sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} "sudo useradd -m -s /bin/bash -p '{encpass}' {newuser}"'''.format(passwd=service.passwd, user=service.user, IP=host.IP, encpass=passhash, newuser=newuser)
 	newuser_process = subprocess.Popen(newuser_command, stdout=subprocess.PIPE, shell=True)
 	newuser_process.wait()
 	newuser_output, newuser_error = newuser_process.communicate()
