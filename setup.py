@@ -287,9 +287,9 @@ def run(host, results):
 def main():
 	results = parse_arguments()
 
-	#First I need to nmap to get the hosts.gnmap file.
+	#First I need to nmap to get the hosts.gnmap file. This requires sudo because in order to detect all possible hosts the type of scan requires raw socket / raw packet privileges.
 	print "Nmapping network"
-	nmap_command = "nmap -oA hosts {network}".format(network=results.network)
+	nmap_command = "sudo nmap -oA hosts -sS -T4 {network}".format(network=results.network)
 	nmap_process = subprocess.Popen(nmap_command, stdout=subprocess.PIPE, shell=True)
 	nmap_output, nmap_error = nmap_process.communicate()
 
