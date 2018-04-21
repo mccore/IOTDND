@@ -46,7 +46,6 @@ class Host:
 
 def doSSH(host, service, newuser, newpass, results):
 	#TODO: Error check the subprocess return code
-	host.processed = True
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
 	disk_space_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'df -B1 --output=avail / | sed '1d''".format(passwd=service.passwd, user=service.user, IP=host.IP)
@@ -154,8 +153,6 @@ def doTelnet(host, service, newuser, newpass, results):
 	if ssh_check_rc == 0:
 		print "{IP:} SSH is available. Skipping Telnet.".format(IP=host.IP)
 		return None
-
-	host.processed = True
 
 	tn1 = telnetlib.Telnet(host.IP)
 
@@ -360,4 +357,4 @@ def main():
 	cron_output, cron_error = cron_process.communicate()
 
 if __name__ == "__main__":
-    main()
+  main()

@@ -14,4 +14,3 @@ ubnt
 tech
 mother
 basic
-admin
