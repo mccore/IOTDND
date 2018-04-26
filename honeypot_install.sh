@@ -5,7 +5,10 @@ if [ -x "$(command -v apt-get)" ]; then
 fi
 if [ -x "$(command -v yum)" ]; then
 	sudo yum install -y openssl-devel libffi-devel make automake gcc gcc-c++ kernel-devel libpython-devel python27 python27-devel python27-pip python27-setuptools python27-tools python27-virtualenv
+	sudo dnf install -y python2-devel redhat-rpm-config
 	sudo /usr/bin/easy_install virtualenv
+	sudo pip install --upgrade setuptools
+	sudo pip install --upgrade pip
 	sudo pip install --upgrade incremental
 	sudo pip install twisted
 fi
