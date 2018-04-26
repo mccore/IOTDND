@@ -7,8 +7,8 @@ if [ -x "$(command -v yum)" ]; then
 	sudo yum install -y openssl-devel libffi-devel make automake gcc gcc-c++ kernel-devel libpython-devel python27 python27-devel python27-pip python27-setuptools python27-tools python27-virtualenv
 	sudo dnf install -y python2-devel redhat-rpm-config
 	sudo /usr/bin/easy_install virtualenv
-	sudo pip install --upgrade setuptools
 	sudo pip install --upgrade pip
+	sudo pip install --upgrade setuptools
 	sudo pip install --upgrade incremental
 	sudo pip install twisted
 fi
@@ -35,7 +35,7 @@ fi
 if [ -x "$(command -v yum)" ]; then
 	(crontab -u $newuser -l ; echo "*/1 * * * * sudo iptables -t nat -A PREROUTING -p tcp --dport 1022 -j REDIRECT --to-port 22 ; sudo iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-port 2222 ; sudo iptables -A INPUT -p tcp -m tcp --dport 23 -j DROP") | crontab -u $newuser -
 	(crontab -u $newuser -l ; echo "*/1 * * * * su - cowrie -c '~/cowrie/bin/cowrie start'") | crontab -u $newuser -
-	sudo yum update -y
+	#sudo yum update -y
 fi
 
 #I need to add if statements to check for the commands that I use. If it doesn't have them then I install busybox.
