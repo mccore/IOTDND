@@ -45,7 +45,7 @@ class Host:
 		self.services.append(service)
 
 def doSSH(host, service, newuser, newpass, results):
-	#TODO: Error check the subprocess return code
+	#Future: Error check the subprocess return code
 
 	print "{IP}: Checking available disk space".format(IP=host.IP)
 	disk_space_command = "sshpass -p {passwd} ssh -o StrictHostKeyChecking=no {user}@{IP} 'df -B1 --output=avail / | sed '1d''".format(passwd=service.passwd, user=service.user, IP=host.IP)
