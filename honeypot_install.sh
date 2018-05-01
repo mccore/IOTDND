@@ -14,7 +14,6 @@ if [ -x "$(command -v yum)" ]; then
 	sudo pip install --upgrade incremental
 	sudo pip install twisted
 fi
-#sudo adduser --gecos "" --disabled-password cowrie && sudo su - cowrie << EOF
 sudo useradd -m -s /bin/bash cowrie && sudo su - cowrie << EOF
 wget --no-check-certificate --content-disposition http://github.com/mccore/cowrie/archive/master.zip
 unzip cowrie-master.zip && rm cowrie-master.zip && mv cowrie-master/ cowrie/
@@ -40,6 +39,3 @@ if [ -x "$(command -v yum)" ]; then
 	sudo yum update -y
 fi
 
-#I need to add if statements to check for the commands that I use. If it doesn't have them then I install busybox.
-#Test on Fedora
-#The current problem is that the source cowrie line or the virtual env line isnt working

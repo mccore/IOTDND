@@ -25,4 +25,4 @@ if [ -x "$(command -v yum)" ]; then
 	sudo yum update -y
 fi
 
-#For redhat/fedora we don't need to download and build from source since both OSes have Dropbear in their repositories
+#For redhat/fedora/centos we don't need to download and build from source since both OSes have Dropbear in their repositories

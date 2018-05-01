@@ -55,6 +55,7 @@ def doSSH(host, service, newuser, newpass, results):
 	disk_space_output = disk_space_output.strip()
 	#print "{IP}: Available space = {space}".format(IP=host.IP, space=disk_space_output)
 
+	#Decrypt the password file so that we can write to it
 	date=datetime.datetime.now().strftime("%Y-%m-%d")
 	if os.path.isfile("./logins_{date}.txt.enc".format(date=date)):
 		if ".pem" in results.pass_storage_type or ".key" in results.pass_storage_type:
@@ -65,10 +66,12 @@ def doSSH(host, service, newuser, newpass, results):
 		#dec_file_process.wait()
 		dec_file_output, dec_file_error = dec_file_process.communicate()
 
+	#Write to the decrypted file
 	file = open('./logins_{date}.txt'.format(date=date), 'a+')
 	file.write("{IP}={user}:{passwd}".format(IP=host.IP, user=newuser, passwd=newpass))
 	file.close()
 
+	#Re-encrypt the file
 	if ".pem" in results.pass_storage_type or ".key" in results.pass_storage_type:
 		enc_file_command = "openssl enc -aes-256-cbc -a -salt -in ./logins_{date}.txt -out ./logins_{date}.txt.enc -kfile {newpass} && rm ./logins_{date}.txt".format(date=date, newpass=results.pass_storage_type)
 	else:
@@ -140,9 +143,9 @@ def doSSH(host, service, newuser, newpass, results):
 
 def doTelnet(host, service, newuser, newpass, results):
 	#First thing I'm going to do is transfer an ssh setup file via netcat. Then I'm going to run it via telnet. Only after that will telnet be blocked.
-	#TODO: Error checking? More difficult than with SSH because the subprocess return code can't be checked.
-	#TODO: Disk space checking should use a regex. Assuming what comes after Avail is the correct number is dangerous if a different program writes to the terminal in between Avail and the num.
-	#			 Other option is to pipe the output to a file and transfer it back to the device to read from it since it will be free of contamination from stdout.
+	#Future: Error checking? More difficult than with SSH because the subprocess return code can't be checked.
+	#Future: Disk space checking should use a regex. Assuming what comes after Avail is the correct number is dangerous if a different program writes to the terminal in between Avail and the num.
+	#			   Other option is to pipe the output to a file and transfer it back to the device to read from it since it will be free of contamination from stdout.
 
 	print "{IP}: Checking remote host for SSH".format(IP=host.IP)
 	ssh_check_command = "nc -z {IP} 22".format(IP=host.IP)
